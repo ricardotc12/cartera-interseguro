@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Tokens de marca Interseguro (sección 17 del rediseño). Los componentes usan
+ * las utilidades de Tailwind (primary-*, secondary-*) definidas en
+ * tailwind.config.js a partir de estos mismos valores; estas variables quedan
+ * disponibles para CSS/JS que no pase por Tailwind (ej. colores de Recharts).
+ */
+:root {
+  --color-primary: #1a5dad; /* azul/navy: estructura y navegación */
+  --color-primary-dark: #0e325d;
+  --color-primary-light: #4e92e4;
+  --color-secondary: #009ed1; /* turquesa/cian: acentos e indicadores */
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-secondary: #64748b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  overflow-x: hidden;
+  @apply font-sans antialiased;
+}
+
+/*
+ * Red de seguridad responsive (sección 15/16): un texto largo sin espacios
+ * (correo, URL, número largo) nunca debe forzar overflow horizontal en mobile.
+ * No afecta el layout donde el texto ya cabe (comportamiento actual intacto).
+ */
+p,
+span,
+td,
+th,
+h1,
+h2,
+h3,
+h4,
+li,
+a {
+  overflow-wrap: break-word;
+}
+
+/* Respeta la preferencia del sistema de reducir animaciones (sección 6). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

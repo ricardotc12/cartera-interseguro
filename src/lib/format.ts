@@ -1,0 +1,31 @@
+const currencyFormatter = new Intl.NumberFormat('es-PE', {
+  style: 'currency',
+  currency: 'PEN',
+  minimumFractionDigits: 2,
+})
+
+const dateFormatter = new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+const monthYearFormatter = new Intl.DateTimeFormat('es-PE', { month: 'long', year: 'numeric' })
+
+export function formatCurrency(amount: number): string {
+  return currencyFormatter.format(amount)
+}
+
+export function formatPercentage(fraction: number, decimals = 2): string {
+  return `${(fraction * 100).toFixed(decimals)}%`
+}
+
+/** Formatea un porcentaje ya expresado en puntos (0-100), como los ratios de cobranza/ICV. */
+export function formatPoints(points: number, decimals = 2): string {
+  return `${points.toFixed(decimals)}%`
+}
+
+export function formatDate(isoDate: string): string {
+  return dateFormatter.format(new Date(`${isoDate}T00:00:00`))
+}
+
+/** Formatea un mes de cobranza ('YYYY-MM-01') como "Septiembre 2026". */
+export function formatMonthYear(isoDate: string): string {
+  const text = monthYearFormatter.format(new Date(`${isoDate}T00:00:00`))
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
