@@ -9,6 +9,8 @@ import { calculateDaysOverdue } from '@/domain'
 import type { PaymentStatus } from '@/types/domain'
 import { PaymentStatusBadge } from './PaymentStatusBadge'
 import { PaymentFormModal } from './PaymentFormModal'
+import { PaymentHistoryModal } from './PaymentHistoryModal'
+import type { Affiliate } from '@/types/domain'
 
 type StatusFilter = 'pendientes' | PaymentStatus | 'todos'
 
@@ -43,6 +45,7 @@ export function CollectionPage() {
   const [monthFilter, setMonthFilter] = useState<string>(currentMonth())
   const [registering, setRegistering] = useState<PaymentWithContext | undefined>(undefined)
   const [editing, setEditing] = useState<PaymentWithContext | undefined>(undefined)
+  const [historyFor, setHistoryFor] = useState<Affiliate | undefined>(undefined)
 
   const availableMonths = useMemo(() => {
     const months = new Set(payments.map((p) => p.yearMonth))
@@ -135,7 +138,14 @@ export function CollectionPage() {
                   return (
                     <tr key={payment.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-900">
-                        {payment.affiliate.firstName} {payment.affiliate.lastName}
+                        <button
+                          type="button"
+                          onClick={() => setHistoryFor(payment.affiliate)}
+                          className="text-left hover:text-primary-700 hover:underline"
+                          title="Ver historial de pagos"
+                        >
+                          {payment.affiliate.firstName} {payment.affiliate.lastName}
+                        </button>
                         <div className="text-xs font-normal text-slate-400">DNI {payment.affiliate.dni}</div>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{payment.policy.policyNumber}</td>
@@ -211,10 +221,15 @@ export function CollectionPage() {
                 <Card key={payment.id}>
                   <CardBody>
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium text-slate-900">
+                      <div className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setHistoryFor(payment.affiliate)}
+                          className="text-left font-medium text-slate-900 hover:text-primary-700 hover:underline"
+                          title="Ver historial de pagos"
+                        >
                           {payment.affiliate.firstName} {payment.affiliate.lastName}
-                        </p>
+                        </button>
                         <p className="text-xs text-slate-500">
                           Póliza {payment.policy.policyNumber} · {formatMonthYear(payment.yearMonth)}
                         </p>
@@ -291,6 +306,15 @@ export function CollectionPage() {
           payment={editing}
           onClose={() => setEditing(undefined)}
           onSubmit={(input) => updatePayment(editing.id, input)}
+        />
+      )}
+
+      {historyFor && (
+        <PaymentHistoryModal
+          open={!!historyFor}
+          affiliate={historyFor}
+          payments={payments.filter((p) => p.affiliate.id === historyFor.id)}
+          onClose={() => setHistoryFor(undefined)}
         />
       )}
     </div>
