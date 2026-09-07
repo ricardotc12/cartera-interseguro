@@ -2,30 +2,57 @@ import { describe, it, expect } from 'vitest'
 import { generateOwedMonths, calculateDaysOverdue } from './payments'
 
 describe('generateOwedMonths (sección 19)', () => {
-  it('un afiliado que ingresó en junio debe pagos de junio a septiembre (mes de referencia)', () => {
+  it('un afiliado que ingresó en junio debe verse de junio a diciembre del año en curso, no solo hasta hoy', () => {
     expect(generateOwedMonths('2026-06-15', '2026-09-04')).toEqual([
       '2026-06-01',
       '2026-07-01',
       '2026-08-01',
       '2026-09-01',
+      '2026-10-01',
+      '2026-11-01',
+      '2026-12-01',
     ])
   })
 
-  it('un afiliado que ingresó en septiembre solo debe septiembre en adelante, no meses previos', () => {
-    expect(generateOwedMonths('2026-09-10', '2026-09-30')).toEqual(['2026-09-01'])
+  it('un afiliado que ingresó en septiembre debe septiembre a diciembre, no meses previos ni de años futuros', () => {
+    expect(generateOwedMonths('2026-09-10', '2026-09-30')).toEqual(['2026-09-01', '2026-10-01', '2026-11-01', '2026-12-01'])
   })
 
-  it('cruza el fin de año correctamente', () => {
+  it('cruza el fin de año correctamente, completando diciembre del año de referencia', () => {
     expect(generateOwedMonths('2025-11-10', '2026-02-01')).toEqual([
       '2025-11-01',
       '2025-12-01',
       '2026-01-01',
       '2026-02-01',
+      '2026-03-01',
+      '2026-04-01',
+      '2026-05-01',
+      '2026-06-01',
+      '2026-07-01',
+      '2026-08-01',
+      '2026-09-01',
+      '2026-10-01',
+      '2026-11-01',
+      '2026-12-01',
     ])
   })
 
-  it('devuelve vacío si la póliza inicia después de la fecha de referencia', () => {
-    expect(generateOwedMonths('2026-12-01', '2026-09-04')).toEqual([])
+  it('al empezar un año nuevo, una póliza vigente desde antes muestra los 12 meses de ese año', () => {
+    const result = generateOwedMonths('2025-06-01', '2027-01-05')
+    expect(result[result.length - 1]).toBe('2027-12-01')
+    expect(result.filter((m) => m.startsWith('2027-'))).toEqual(
+      Array.from({ length: 12 }, (_, i) => `2027-${String(i + 1).padStart(2, '0')}-01`),
+    )
+  })
+
+  it('una póliza que arranca el propio 1 de enero del año de referencia ya ve sus 12 meses', () => {
+    expect(generateOwedMonths('2027-01-01', '2027-01-05')).toEqual(
+      Array.from({ length: 12 }, (_, i) => `2027-${String(i + 1).padStart(2, '0')}-01`),
+    )
+  })
+
+  it('devuelve vacío si la póliza inicia en un año posterior al de la fecha de referencia', () => {
+    expect(generateOwedMonths('2027-03-01', '2026-09-04')).toEqual([])
   })
 })
 

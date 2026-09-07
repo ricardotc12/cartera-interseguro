@@ -1,15 +1,21 @@
 /**
  * Meses que corresponde controlar el pago de una póliza, desde el mes de su
- * fecha de inicio hasta el mes de la fecha de referencia (inclusive). No
- * asume que todas las pólizas deben pagos desde un mes fijo (sección 19):
- * cada una arranca en su propio mes según cuándo se afilió.
- * Devuelve fechas ISO del primer día de cada mes ('YYYY-MM-01').
+ * fecha de inicio hasta diciembre del año de la fecha de referencia
+ * (inclusive) — se ve el calendario completo del año como pendiente desde
+ * ya, no solo lo ya vencido. No asume que todas las pólizas deben pagos
+ * desde un mes fijo (sección 19): cada una arranca en su propio mes según
+ * cuándo se afilió. Al empezar un año nuevo, la fecha de referencia cae en
+ * ese año y se generan sus 12 meses. Devuelve fechas ISO del primer día de
+ * cada mes ('YYYY-MM-01').
  */
 export function generateOwedMonths(startDate: string, referenceDate: string): string[] {
   const [startYear, startMonth] = startDate.slice(0, 7).split('-').map(Number) as [number, number]
-  const [endYear, endMonth] = referenceDate.slice(0, 7).split('-').map(Number) as [number, number]
+  const [endYear] = referenceDate.slice(0, 7).split('-').map(Number) as [number, number]
+  const endMonth = 12
 
   const months: string[] = []
+  if (startYear > endYear) return months
+
   let year = startYear
   let month = startMonth
 
