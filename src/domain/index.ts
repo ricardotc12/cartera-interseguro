@@ -4,5 +4,5 @@ export { calculateCollectionRatio, calculateCollectionFactor } from './collectio
 export { calculateICVFactor } from './icv'
 export { calculateGoalProgress } from './goals'
 export { calculatePeriodForDate, calculateDaysUntil } from './period'
-export { generateOwedMonths, calculateDaysOverdue } from './payments'
+export { generateOwedMonths, calculateDaysOverdue, defaultDueDateForMonth, getDisplayPaymentStatus } from './payments'
 export { findRangeMatch, findNextTier } from './rangeRules'

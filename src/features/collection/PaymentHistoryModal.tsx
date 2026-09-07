@@ -2,7 +2,7 @@ import { CheckCircle2, Pencil } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { PaymentStatusBadge } from './PaymentStatusBadge'
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/format'
-import { calculateDaysOverdue } from '@/domain'
+import { calculateDaysOverdue, getDisplayPaymentStatus } from '@/domain'
 import type { PaymentWithContext } from '@/hooks/usePayments'
 import type { Affiliate } from '@/types/domain'
 
@@ -55,6 +55,7 @@ export function PaymentHistoryModal({ open, onClose, affiliate, payments, onRegi
                   {sorted.map((payment) => {
                     const overdue = calculateDaysOverdue(payment.dueDate, today())
                     const isPaid = payment.status === 'pagado'
+                    const displayStatus = getDisplayPaymentStatus(payment.status, payment.dueDate, today())
                     return (
                       <li
                         key={payment.id}
@@ -72,7 +73,7 @@ export function PaymentHistoryModal({ open, onClose, affiliate, payments, onRegi
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <div className="flex flex-col items-end gap-1">
-                            <PaymentStatusBadge status={payment.status} />
+                            <PaymentStatusBadge status={displayStatus} />
                             <span className="text-xs font-medium text-slate-600">
                               {formatCurrency(payment.paidAmount ?? payment.expectedAmount)}
                             </span>

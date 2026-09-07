@@ -7,7 +7,7 @@ import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
-import { Switch } from '@/components/ui/Switch'
+import { SwitchField } from '@/components/ui/Switch'
 import { formatPoints } from '@/lib/format'
 
 export function IcvPage() {
@@ -60,11 +60,13 @@ export function IcvPage() {
     <div className="space-y-4">
       <Card>
         <CardBody>
-          <Switch checked={profile?.showIcv ?? false} onChange={handleToggle} disabled={profileLoading} label="Mostrar ICV en el Dashboard" />
-          <p className="mt-1 text-xs text-slate-400">
-            Actívalo cuando confirmes con Interseguro la fórmula oficial de cálculo. Mientras tanto queda oculto del Dashboard, pero
-            se sigue calculando aquí y en el Incentivo Final.
-          </p>
+          <SwitchField
+            checked={profile?.showIcv ?? false}
+            onChange={handleToggle}
+            disabled={profileLoading}
+            label="Mostrar ICV en el Dashboard"
+            description="Actívalo cuando confirmes con Interseguro la fórmula oficial de cálculo. Mientras tanto queda oculto del Dashboard, pero se sigue calculando aquí y en el Incentivo Final."
+          />
           {toggleError && <p className="mt-2 text-xs text-red-600">No se pudo guardar: {toggleError}</p>}
         </CardBody>
       </Card>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import { generateOwedMonths } from '@/domain'
+import { generateOwedMonths, defaultDueDateForMonth } from '@/domain'
 import type { Affiliate, AffiliateStatus, Payment, PaymentStatus, Policy } from '@/types/domain'
 
 export interface PaymentWithContext extends Payment {
@@ -146,6 +146,7 @@ export function usePayments() {
         expected_amount: policy.affiliation_amount,
         status: 'no_pagado' as PaymentStatus,
         is_rescheduled: false,
+        due_date: defaultDueDateForMonth(yearMonth),
         created_by: user.id,
       })),
     )

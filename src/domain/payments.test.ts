@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateOwedMonths, calculateDaysOverdue } from './payments'
+import { generateOwedMonths, calculateDaysOverdue, defaultDueDateForMonth, getDisplayPaymentStatus } from './payments'
 
 describe('generateOwedMonths (sección 19)', () => {
   it('un afiliado que ingresó en junio debe verse de junio a diciembre del año en curso, no solo hasta hoy', () => {
@@ -67,5 +67,36 @@ describe('calculateDaysOverdue (sección 20)', () => {
 
   it('calcula los días de atraso cuando ya venció', () => {
     expect(calculateDaysOverdue('2026-08-25', '2026-09-04')).toBe(10)
+  })
+})
+
+describe('defaultDueDateForMonth', () => {
+  it('usa el día 15 del mismo mes de cobranza como fecha de corte', () => {
+    expect(defaultDueDateForMonth('2026-09-01')).toBe('2026-09-15')
+    expect(defaultDueDateForMonth('2027-01-01')).toBe('2027-01-15')
+  })
+})
+
+describe('getDisplayPaymentStatus', () => {
+  it('un mes "no_pagado" antes de su vencimiento se muestra como "pendiente"', () => {
+    expect(getDisplayPaymentStatus('no_pagado', '2026-09-15', '2026-09-10')).toBe('pendiente')
+  })
+
+  it('el mismo día del vencimiento todavía se muestra como "pendiente" (inclusive)', () => {
+    expect(getDisplayPaymentStatus('no_pagado', '2026-09-15', '2026-09-15')).toBe('pendiente')
+  })
+
+  it('un mes "no_pagado" después de su vencimiento se muestra como "no_pagado"', () => {
+    expect(getDisplayPaymentStatus('no_pagado', '2026-09-15', '2026-09-16')).toBe('no_pagado')
+  })
+
+  it('sin fecha de vencimiento registrada, se muestra el estado real tal cual', () => {
+    expect(getDisplayPaymentStatus('no_pagado', null, '2026-09-16')).toBe('no_pagado')
+  })
+
+  it('los demás estados se muestran tal cual, sin depender de la fecha', () => {
+    expect(getDisplayPaymentStatus('pagado', '2026-09-15', '2026-09-10')).toBe('pagado')
+    expect(getDisplayPaymentStatus('pendiente_confirmar', '2026-09-15', '2026-09-10')).toBe('pendiente_confirmar')
+    expect(getDisplayPaymentStatus('no_corresponde', '2026-09-15', '2026-09-10')).toBe('no_corresponde')
   })
 })

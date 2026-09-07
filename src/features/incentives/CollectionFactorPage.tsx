@@ -6,7 +6,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { calculatePeriodForDate, findNextTier } from '@/domain'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
-import { Switch } from '@/components/ui/Switch'
+import { SwitchField } from '@/components/ui/Switch'
 import { formatPoints } from '@/lib/format'
 
 export function CollectionFactorPage() {
@@ -35,16 +35,13 @@ export function CollectionFactorPage() {
     <div className="space-y-4">
       <Card>
         <CardBody>
-          <Switch
+          <SwitchField
             checked={profile?.showCollectionRatio ?? false}
             onChange={handleToggle}
             disabled={profileLoading}
             label="Mostrar Ratio Cobranza en el Dashboard"
+            description="Actívalo cuando confirmes con Interseguro la fórmula oficial de cálculo. Mientras tanto queda oculto del Dashboard, pero se sigue calculando aquí y en el Incentivo Final."
           />
-          <p className="mt-1 text-xs text-slate-400">
-            Actívalo cuando confirmes con Interseguro la fórmula oficial de cálculo. Mientras tanto queda oculto del Dashboard, pero
-            se sigue calculando aquí y en el Incentivo Final.
-          </p>
           {toggleError && <p className="mt-2 text-xs text-red-600">No se pudo guardar: {toggleError}</p>}
         </CardBody>
       </Card>

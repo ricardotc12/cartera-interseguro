@@ -1,3 +1,5 @@
+import type { PaymentStatus } from '@/types/domain'
+
 /**
  * Meses que corresponde controlar el pago de una póliza, desde el mes de su
  * fecha de inicio hasta diciembre del año de la fecha de referencia
@@ -41,4 +43,35 @@ export function calculateDaysOverdue(dueDate: string | null, referenceDate: stri
   if (!dueDate) return null
   const diffDays = Math.floor((new Date(referenceDate).getTime() - new Date(dueDate).getTime()) / 86_400_000)
   return diffDays > 0 ? diffDays : null
+}
+
+/**
+ * Fecha de corte (vencimiento) por defecto de un mes de cobranza: el día 15
+ * de ese mismo mes — la asesora confirmó que el ciclo de Interseguro corre
+ * del 16 de un mes al 15 del siguiente, y el pago se atribuye/vence en el
+ * mes en el que cae ese día 15. Se usa solo al generar el mes por primera
+ * vez; si la asesora edita manualmente la fecha de vencimiento de un pago,
+ * esa edición manual prevalece siempre.
+ */
+export function defaultDueDateForMonth(yearMonth: string): string {
+  return `${yearMonth.slice(0, 7)}-15`
+}
+
+/**
+ * Estado a mostrar en pantalla para un pago. Aunque en base de datos un mes
+ * recién generado ya queda como 'no_pagado' (para poder listarlo desde ya,
+ * sección 19), no corresponde alarmar a la asesora con "No pagado" antes de
+ * que llegue su fecha de corte: se muestra como "pendiente" hasta el día de
+ * vencimiento (inclusive) y recién después pasa a mostrarse como "No
+ * pagado". Los demás estados (pagado, pendiente_confirmar, no_corresponde)
+ * se muestran tal cual, sin depender de la fecha.
+ */
+export function getDisplayPaymentStatus(
+  status: PaymentStatus,
+  dueDate: string | null,
+  referenceDate: string,
+): PaymentStatus | 'pendiente' {
+  if (status !== 'no_pagado') return status
+  if (!dueDate) return status
+  return referenceDate <= dueDate ? 'pendiente' : status
 }
