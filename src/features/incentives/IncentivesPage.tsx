@@ -2,6 +2,7 @@ import { ArrowDown } from 'lucide-react'
 import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
 import { useIcvRecords } from '@/hooks/useIcvRecords'
 import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
+import { useProfile } from '@/hooks/useProfile'
 import { calculatePeriodForDate } from '@/domain'
 import { Card, CardBody } from '@/components/ui/Card'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
@@ -33,8 +34,9 @@ export function IncentivesPage() {
   const { getForPeriod, loading: icvLoading } = useIcvRecords()
   const icvRecord = currentPeriod ? getForPeriod(currentPeriod.id) : null
   const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, icvRecord?.icvPercentage ?? null)
+  const { profile, loading: profileLoading } = useProfile()
 
-  const loading = periodsLoading || icvLoading || metricsLoading
+  const loading = periodsLoading || icvLoading || metricsLoading || profileLoading
 
   if (loading) return <p className="text-sm text-slate-500">Calculando incentivo…</p>
   if (periodsError || metricsError) return <p className="text-sm text-red-600">{periodsError ?? metricsError}</p>
@@ -62,14 +64,26 @@ export function IncentivesPage() {
         <Arrow />
         <Step
           label="Factor Cobranza"
-          value={metrics.collectionFactor != null ? metrics.collectionFactor.toFixed(2) : '—'}
-          hint={metrics.collectionRatio != null ? `Ratio Cobranza: ${formatPoints(metrics.collectionRatio)}` : 'Sin primas por cobrar aún'}
+          value={profile?.showCollectionRatio ? (metrics.collectionFactor != null ? metrics.collectionFactor.toFixed(2) : '—') : '1.00'}
+          hint={
+            profile?.showCollectionRatio
+              ? metrics.collectionRatio != null
+                ? `Ratio Cobranza: ${formatPoints(metrics.collectionRatio)}`
+                : 'Sin primas por cobrar aún'
+              : 'Aún no aplicado — actívalo en Factor Cobranza'
+          }
         />
         <Arrow />
         <Step
           label="Factor ICV"
-          value={metrics.icvFactor != null ? metrics.icvFactor.toFixed(2) : '—'}
-          hint={metrics.icvPercentage != null ? `ICV: ${formatPoints(metrics.icvPercentage)}` : 'ICV aún no registrado'}
+          value={profile?.showIcv ? (metrics.icvFactor != null ? metrics.icvFactor.toFixed(2) : '—') : '1.00'}
+          hint={
+            profile?.showIcv
+              ? metrics.icvPercentage != null
+                ? `ICV: ${formatPoints(metrics.icvPercentage)}`
+                : 'ICV aún no registrado'
+              : 'Aún no aplicado — actívalo en ICV'
+          }
         />
         <Arrow />
         <Card className="border-brand-200 bg-brand-50">

@@ -11,6 +11,7 @@ import {
 } from '@/domain'
 import type { PaymentStatus } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
+import { useProfile } from './useProfile'
 
 export interface PeriodMetrics {
   totalAffiliationAmount: number
@@ -28,6 +29,10 @@ export interface PeriodMetrics {
 }
 
 export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: number | null) {
+  const { profile } = useProfile()
+  const includeCollectionFactor = profile?.showCollectionRatio ?? false
+  const includeIcvFactor = profile?.showIcv ?? false
+
   const [metrics, setMetrics] = useState<PeriodMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,9 +83,16 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
 
       const icvFactor = icvPercentage != null ? calculateICVFactor(icvPercentage, period.icvFactorRules) : null
 
+      // Mientras la asesora no confirme la fórmula oficial de Factor Cobranza/ICV con
+      // Interseguro, esos factores quedan en neutro (1) para el Incentivo Final — no se
+      // inventa ni se aplica un cálculo sin confirmar. Se activan desde sus propias
+      // pantallas (profiles.show_collection_ratio / show_icv).
+      const effectiveCollectionFactor = includeCollectionFactor ? collectionFactor : 1
+      const effectiveIcvFactor = includeIcvFactor ? icvFactor : 1
+
       const finalIncentive =
-        baseIncentive != null && collectionFactor != null && icvFactor != null
-          ? calculateFinalIncentive(baseIncentive, collectionFactor, icvFactor)
+        baseIncentive != null && effectiveCollectionFactor != null && effectiveIcvFactor != null
+          ? calculateFinalIncentive(baseIncentive, effectiveCollectionFactor, effectiveIcvFactor)
           : null
 
       const paidPaymentsCount = billablePayments.filter((p) => p.status === 'pagado').length
@@ -108,7 +120,7 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
     return () => {
       cancelled = true
     }
-  }, [period, icvPercentage])
+  }, [period, icvPercentage, includeCollectionFactor, includeIcvFactor])
 
   return { metrics, loading, error }
 }
