@@ -1,16 +1,15 @@
 import { useMemo, useState } from 'react'
-import { Search, CheckCircle2, Pencil, Phone, MessageCircle, Mail, Wallet } from 'lucide-react'
-import { usePayments, type PaymentWithContext } from '@/hooks/usePayments'
+import { Search, Phone, MessageCircle, Mail, Wallet, ChevronRight } from 'lucide-react'
+import { usePayments, type PaymentWithContext, type PaymentUpdateInput } from '@/hooks/usePayments'
 import { Card, CardBody } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
 import { fieldClass } from '@/components/ui/FormField'
 import { TableRowsSkeleton } from '@/components/ui/Skeleton'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
 import { calculateDaysOverdue } from '@/domain'
-import type { PaymentStatus } from '@/types/domain'
-import { PaymentStatusBadge } from './PaymentStatusBadge'
+import type { Affiliate, PaymentStatus } from '@/types/domain'
 import { PaymentFormModal } from './PaymentFormModal'
 import { PaymentHistoryModal } from './PaymentHistoryModal'
-import type { Affiliate } from '@/types/domain'
 
 type StatusFilter = 'pendientes' | PaymentStatus | 'todos'
 
@@ -26,15 +25,49 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 const today = () => new Date().toISOString().slice(0, 10)
 const currentMonth = () => `${today().slice(0, 7)}-01`
 
-function daysOverdue(payment: PaymentWithContext): number | null {
-  if (payment.status !== 'no_pagado' && payment.status !== 'pendiente_confirmar') return null
-  return calculateDaysOverdue(payment.dueDate, today())
-}
-
 function matchesSearch(payment: PaymentWithContext, query: string): boolean {
   if (!query) return true
   const haystack = `${payment.affiliate.firstName} ${payment.affiliate.lastName} ${payment.affiliate.dni} ${payment.policy.policyNumber}`.toLowerCase()
   return haystack.includes(query.toLowerCase())
+}
+
+interface AffiliateSummary {
+  affiliate: Affiliate
+  policyNumbers: string[]
+  pendingCount: number
+  paidCount: number
+  totalPending: number
+  maxOverdue: number | null
+}
+
+/** Agrupa los pagos filtrados por afiliado: cada persona aparece una sola vez en la lista (sección "un afiliado, un click, todos sus meses"). */
+function groupByAffiliate(items: PaymentWithContext[]): AffiliateSummary[] {
+  const byId = new Map<string, AffiliateSummary>()
+
+  for (const payment of items) {
+    const id = payment.affiliate.id
+    let summary = byId.get(id)
+    if (!summary) {
+      summary = { affiliate: payment.affiliate, policyNumbers: [], pendingCount: 0, paidCount: 0, totalPending: 0, maxOverdue: null }
+      byId.set(id, summary)
+    }
+    if (!summary.policyNumbers.includes(payment.policy.policyNumber)) summary.policyNumbers.push(payment.policy.policyNumber)
+
+    if (payment.status === 'pagado') {
+      summary.paidCount += 1
+    } else if (payment.status === 'no_pagado' || payment.status === 'pendiente_confirmar') {
+      summary.pendingCount += 1
+      summary.totalPending += payment.expectedAmount
+      const overdue = calculateDaysOverdue(payment.dueDate, today())
+      if (overdue != null && (summary.maxOverdue == null || overdue > summary.maxOverdue)) summary.maxOverdue = overdue
+    }
+  }
+
+  return Array.from(byId.values()).sort((a, b) => {
+    if (a.pendingCount !== b.pendingCount) return b.pendingCount - a.pendingCount
+    if ((b.maxOverdue ?? -1) !== (a.maxOverdue ?? -1)) return (b.maxOverdue ?? -1) - (a.maxOverdue ?? -1)
+    return `${a.affiliate.lastName} ${a.affiliate.firstName}`.localeCompare(`${b.affiliate.lastName} ${b.affiliate.firstName}`)
+  })
 }
 
 export function CollectionPage() {
@@ -63,6 +96,14 @@ export function CollectionPage() {
       }),
     [payments, search, statusFilter, monthFilter],
   )
+
+  const summaries = useMemo(() => groupByAffiliate(filtered), [filtered])
+
+  const historyPayments = historyFor ? payments.filter((p) => p.affiliate.id === historyFor.id) : []
+
+  async function handleUpdate(id: string, input: PaymentUpdateInput) {
+    return updatePayment(id, input)
+  }
 
   return (
     <div className="space-y-4">
@@ -105,187 +146,171 @@ export function CollectionPage() {
 
       {loading ? (
         <Card className="overflow-hidden">
-          <TableRowsSkeleton rows={6} columns={6} />
+          <TableRowsSkeleton rows={6} columns={5} />
         </Card>
-      ) : filtered.length === 0 ? (
+      ) : summaries.length === 0 ? (
         <Card>
           <CardBody className="flex flex-col items-center py-12 text-center text-sm text-slate-500">
             <Wallet className="mb-3 h-8 w-8 text-slate-300" />
             {payments.length === 0
               ? 'Aún no hay pólizas activas con meses de cobranza generados.'
-              : 'Ningún pago coincide con los filtros seleccionados.'}
+              : 'Ningún afiliado coincide con los filtros seleccionados.'}
           </CardBody>
         </Card>
       ) : (
         <>
-          {/* Desktop: tabla */}
+          {/* Desktop: tabla, un afiliado por fila */}
           <Card className="hidden overflow-hidden md:block">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 font-medium">Afiliado</th>
-                  <th className="px-4 py-3 font-medium">Póliza</th>
-                  <th className="px-4 py-3 font-medium">Mes</th>
-                  <th className="px-4 py-3 font-medium">Monto esperado</th>
+                  <th className="px-4 py-3 font-medium">Póliza(s)</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium">Monto pendiente</th>
                   <th className="px-4 py-3 font-medium">Atraso</th>
                   <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((payment) => {
-                  const overdue = daysOverdue(payment)
-                  return (
-                    <tr key={payment.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        <button
-                          type="button"
-                          onClick={() => setHistoryFor(payment.affiliate)}
-                          className="text-left hover:text-primary-700 hover:underline"
-                          title="Ver historial de pagos"
-                        >
-                          {payment.affiliate.firstName} {payment.affiliate.lastName}
-                        </button>
-                        <div className="text-xs font-normal text-slate-400">DNI {payment.affiliate.dni}</div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{payment.policy.policyNumber}</td>
-                      <td className="px-4 py-3 text-slate-600">{formatMonthYear(payment.yearMonth)}</td>
-                      <td className="px-4 py-3 text-slate-600">{formatCurrency(payment.expectedAmount)}</td>
-                      <td className="px-4 py-3">
-                        <PaymentStatusBadge status={payment.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        {overdue ? <span className="text-xs font-medium text-red-600">{overdue} días</span> : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-1">
-                          {payment.affiliate.phone && (
-                            <>
-                              <a
-                                href={`tel:${payment.affiliate.phone}`}
-                                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                                title="Llamar" aria-label="Llamar"
-                              >
-                                <Phone className="h-4 w-4" />
-                              </a>
-                              <a
-                                href={`https://wa.me/${payment.affiliate.phone.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                                title="WhatsApp" aria-label="WhatsApp"
-                              >
-                                <MessageCircle className="h-4 w-4" />
-                              </a>
-                            </>
-                          )}
-                          {payment.affiliate.email && (
-                            <a
-                              href={`mailto:${payment.affiliate.email}`}
-                              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                              title="Correo" aria-label="Correo"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </a>
-                          )}
-                          {payment.status !== 'pagado' && (
-                            <button
-                              onClick={() => setRegistering(payment)}
-                              className="rounded p-1.5 text-emerald-500 hover:bg-emerald-50"
-                              title="Registrar pago" aria-label="Registrar pago"
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setEditing(payment)}
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                            title="Editar" aria-label="Editar"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </Card>
-
-          {/* Móvil: cards */}
-          <div className="space-y-3 md:hidden">
-            {filtered.map((payment) => {
-              const overdue = daysOverdue(payment)
-              return (
-                <Card key={payment.id}>
-                  <CardBody>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => setHistoryFor(payment.affiliate)}
-                          className="text-left font-medium text-slate-900 hover:text-primary-700 hover:underline"
-                          title="Ver historial de pagos"
-                        >
-                          {payment.affiliate.firstName} {payment.affiliate.lastName}
-                        </button>
-                        <p className="text-xs text-slate-500">
-                          Póliza {payment.policy.policyNumber} · {formatMonthYear(payment.yearMonth)}
-                        </p>
-                      </div>
-                      <PaymentStatusBadge status={payment.status} />
-                    </div>
-                    <div className="mt-2 flex items-center justify-between text-sm">
-                      <span className="text-slate-600">{formatCurrency(payment.expectedAmount)}</span>
-                      {overdue && <span className="text-xs font-medium text-red-600">{overdue} días de atraso</span>}
-                    </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                      <div className="flex gap-1">
-                        {payment.affiliate.phone && (
+                {summaries.map((summary) => (
+                  <tr
+                    key={summary.affiliate.id}
+                    onClick={() => setHistoryFor(summary.affiliate)}
+                    className="cursor-pointer hover:bg-slate-50"
+                  >
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {summary.affiliate.firstName} {summary.affiliate.lastName}
+                      <div className="text-xs font-normal text-slate-400">DNI {summary.affiliate.dni}</div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{summary.policyNumbers.join(', ')}</td>
+                    <td className="px-4 py-3">
+                      {summary.pendingCount > 0 ? (
+                        <Badge tone={summary.maxOverdue ? 'danger' : 'warning'} dot>
+                          {summary.pendingCount} pendiente{summary.pendingCount === 1 ? '' : 's'}
+                        </Badge>
+                      ) : (
+                        <Badge tone="success" dot>
+                          Al día
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {summary.totalPending > 0 ? formatCurrency(summary.totalPending) : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {summary.maxOverdue ? <span className="text-xs font-medium text-red-600">{summary.maxOverdue} días</span> : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        {summary.affiliate.phone && (
                           <>
-                            <a href={`tel:${payment.affiliate.phone}`} className="rounded p-2 text-slate-400 hover:bg-slate-100" title="Llamar" aria-label="Llamar">
+                            <a
+                              href={`tel:${summary.affiliate.phone}`}
+                              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                              title="Llamar" aria-label="Llamar"
+                            >
                               <Phone className="h-4 w-4" />
                             </a>
                             <a
-                              href={`https://wa.me/${payment.affiliate.phone.replace(/\D/g, '')}`}
+                              href={`https://wa.me/${summary.affiliate.phone.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="rounded p-2 text-slate-400 hover:bg-slate-100"
+                              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                               title="WhatsApp" aria-label="WhatsApp"
                             >
                               <MessageCircle className="h-4 w-4" />
                             </a>
                           </>
                         )}
-                        {payment.affiliate.email && (
-                          <a href={`mailto:${payment.affiliate.email}`} className="rounded p-2 text-slate-400 hover:bg-slate-100" title="Correo" aria-label="Correo">
+                        {summary.affiliate.email && (
+                          <a
+                            href={`mailto:${summary.affiliate.email}`}
+                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                            title="Correo" aria-label="Correo"
+                          >
                             <Mail className="h-4 w-4" />
                           </a>
                         )}
-                      </div>
-                      <div className="flex gap-2">
-                        {payment.status !== 'pagado' && (
-                          <button
-                            onClick={() => setRegistering(payment)}
-                            className="inline-flex h-9 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white"
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                            Registrar pago
-                          </button>
-                        )}
                         <button
-                          onClick={() => setEditing(payment)}
-                          className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-600"
+                          onClick={() => setHistoryFor(summary.affiliate)}
+                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          title="Ver meses" aria-label="Ver meses"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+
+          {/* Móvil: cards, un afiliado por tarjeta */}
+          <div className="space-y-3 md:hidden">
+            {summaries.map((summary) => (
+              <Card
+                key={summary.affiliate.id}
+                onClick={() => setHistoryFor(summary.affiliate)}
+                className="cursor-pointer active:bg-slate-50"
+              >
+                <CardBody>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900">
+                        {summary.affiliate.firstName} {summary.affiliate.lastName}
+                      </p>
+                      <p className="text-xs text-slate-500">DNI {summary.affiliate.dni} · Póliza {summary.policyNumbers.join(', ')}</p>
                     </div>
-                  </CardBody>
-                </Card>
-              )
-            })}
+                    {summary.pendingCount > 0 ? (
+                      <Badge tone={summary.maxOverdue ? 'danger' : 'warning'} dot>
+                        {summary.pendingCount} pendiente{summary.pendingCount === 1 ? '' : 's'}
+                      </Badge>
+                    ) : (
+                      <Badge tone="success" dot>
+                        Al día
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="text-slate-600">
+                      {summary.totalPending > 0 ? formatCurrency(summary.totalPending) : 'Sin monto pendiente'}
+                    </span>
+                    {summary.maxOverdue && <span className="text-xs font-medium text-red-600">{summary.maxOverdue} días de atraso</span>}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                      {summary.affiliate.phone && (
+                        <>
+                          <a href={`tel:${summary.affiliate.phone}`} className="rounded p-2 text-slate-400 hover:bg-slate-100" title="Llamar" aria-label="Llamar">
+                            <Phone className="h-4 w-4" />
+                          </a>
+                          <a
+                            href={`https://wa.me/${summary.affiliate.phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded p-2 text-slate-400 hover:bg-slate-100"
+                            title="WhatsApp" aria-label="WhatsApp"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </a>
+                        </>
+                      )}
+                      {summary.affiliate.email && (
+                        <a href={`mailto:${summary.affiliate.email}`} className="rounded p-2 text-slate-400 hover:bg-slate-100" title="Correo" aria-label="Correo">
+                          <Mail className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
+                    <span className="flex items-center gap-1 text-xs font-medium text-primary-700">
+                      Ver meses
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
           </div>
         </>
       )}
@@ -296,7 +321,7 @@ export function CollectionPage() {
           payment={registering}
           initial={{ status: 'pagado', paidAmount: registering.expectedAmount, paymentDate: today() }}
           onClose={() => setRegistering(undefined)}
-          onSubmit={(input) => updatePayment(registering.id, input)}
+          onSubmit={(input) => handleUpdate(registering.id, input)}
         />
       )}
 
@@ -305,7 +330,7 @@ export function CollectionPage() {
           open={!!editing}
           payment={editing}
           onClose={() => setEditing(undefined)}
-          onSubmit={(input) => updatePayment(editing.id, input)}
+          onSubmit={(input) => handleUpdate(editing.id, input)}
         />
       )}
 
@@ -313,8 +338,10 @@ export function CollectionPage() {
         <PaymentHistoryModal
           open={!!historyFor}
           affiliate={historyFor}
-          payments={payments.filter((p) => p.affiliate.id === historyFor.id)}
+          payments={historyPayments}
           onClose={() => setHistoryFor(undefined)}
+          onRegisterPayment={(payment) => setRegistering(payment)}
+          onEditPayment={(payment) => setEditing(payment)}
         />
       )}
     </div>
