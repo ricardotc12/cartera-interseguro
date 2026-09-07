@@ -1,13 +1,25 @@
 import { useState, type FormEvent } from 'react'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useHistoricalIncomes, type HistoricalIncomeInput } from '@/hooks/useHistoricalIncomes'
+import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
+import { usePeriodsReport } from '@/hooks/usePeriodsReport'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
 import type { HistoricalIncome } from '@/types/domain'
+
+const MANUAL_COLOR = '#94a3b8' // gris: mes registrado a mano
+const PERIOD_COLOR = '#009ed1' // celeste: calculado en vivo por período
+
+interface IncomeChartPoint {
+  date: string
+  label: string
+  amount: number
+  source: 'manual' | 'period'
+}
 
 const currentMonth = () => `${new Date().toISOString().slice(0, 7)}-01`
 
@@ -17,6 +29,8 @@ function toMonthInputValue(yearMonth: string): string {
 
 export function HistoricalIncomesReport() {
   const { incomes, loading, error, createIncome, updateIncome, deleteIncome } = useHistoricalIncomes()
+  const { periods, loading: periodsLoading } = usePeriodsAdmin()
+  const { rows: periodRows, loading: periodsReportLoading } = usePeriodsReport(periods)
 
   const [editing, setEditing] = useState<HistoricalIncome | undefined>(undefined)
   const [month, setMonth] = useState(toMonthInputValue(currentMonth()))
@@ -72,10 +86,25 @@ export function HistoricalIncomesReport() {
     resetForm()
   }
 
-  const chartData = incomes
-    .slice()
-    .sort((a, b) => a.yearMonth.localeCompare(b.yearMonth))
-    .map((i) => ({ name: formatMonthYear(i.yearMonth), amount: i.amount }))
+  const manualPoints: IncomeChartPoint[] = incomes.map((i) => ({
+    date: i.yearMonth,
+    label: formatMonthYear(i.yearMonth),
+    amount: i.amount,
+    source: 'manual',
+  }))
+
+  // Del período calculado en vivo se usa el Incentivo Final si ya está confirmado
+  // (Factor Cobranza/ICV activos); si no, el Incentivo Base — el mismo criterio que
+  // ya usa el Dashboard para no mostrar un monto que dependa de un factor sin confirmar.
+  const periodPoints: IncomeChartPoint[] = periodRows
+    .map((r): IncomeChartPoint | null => {
+      const amount = r.finalIncentive ?? r.baseIncentive
+      return amount != null ? { date: r.startDate, label: r.name, amount, source: 'period' } : null
+    })
+    .filter((p): p is IncomeChartPoint => p != null)
+
+  const chartData = [...manualPoints, ...periodPoints].sort((a, b) => a.date.localeCompare(b.date))
+  const chartLoading = loading || periodsLoading || periodsReportLoading
 
   return (
     <div className="space-y-4">
@@ -134,21 +163,42 @@ export function HistoricalIncomesReport() {
         </Card>
       )}
 
-      {!loading && chartData.length >= 2 && (
+      {!chartLoading && chartData.length >= 2 && (
         <Card>
           <CardHeader>
             <CardTitle>Evolución de ingresos</CardTitle>
           </CardHeader>
-          <CardBody className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} width={80} tickFormatter={(v) => formatCurrency(v)} />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                <Bar dataKey="amount" name="Monto recibido" fill="#009ed1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardBody>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} width={80} tickFormatter={(v) => formatCurrency(v)} />
+                  <Tooltip
+                    formatter={(value: number, _name, item) => [
+                      formatCurrency(value),
+                      item.payload.source === 'manual' ? 'Registrado a mano' : 'Calculado por período',
+                    ]}
+                  />
+                  <Bar dataKey="amount" name="Ingreso" radius={[4, 4, 0, 0]}>
+                    {chartData.map((point, index) => (
+                      <Cell key={index} fill={point.source === 'manual' ? MANUAL_COLOR : PERIOD_COLOR} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: MANUAL_COLOR }} />
+                Registrado a mano (meses ya pagados antes de usar períodos)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: PERIOD_COLOR }} />
+                Calculado automáticamente por período
+              </span>
+            </div>
           </CardBody>
         </Card>
       )}
