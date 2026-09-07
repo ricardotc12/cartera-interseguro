@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateOwedMonths, calculateDaysOverdue, defaultDueDateForMonth, getDisplayPaymentStatus } from './payments'
+import { generateOwedMonths, calculateDaysOverdue, defaultDueDateForMonth, effectiveDueDate, getDisplayPaymentStatus } from './payments'
 
 describe('generateOwedMonths (sección 19)', () => {
   it('un afiliado que ingresó en junio debe verse de junio a diciembre del año en curso, no solo hasta hoy', () => {
@@ -74,6 +74,16 @@ describe('defaultDueDateForMonth', () => {
   it('usa el día 15 del mismo mes de cobranza como fecha de corte', () => {
     expect(defaultDueDateForMonth('2026-09-01')).toBe('2026-09-15')
     expect(defaultDueDateForMonth('2027-01-01')).toBe('2027-01-15')
+  })
+})
+
+describe('effectiveDueDate', () => {
+  it('usa la fecha registrada si existe', () => {
+    expect(effectiveDueDate('2026-09-01', '2026-09-20')).toBe('2026-09-20')
+  })
+
+  it('usa el día 15 por defecto si el pago no tiene fecha de vencimiento registrada', () => {
+    expect(effectiveDueDate('2026-09-01', null)).toBe('2026-09-15')
   })
 })
 

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Phone, MessageCircle, Mail } from 'lucide-react'
 import type { PaymentWithContext } from '@/hooks/usePayments'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
-import { calculateDaysOverdue } from '@/domain'
+import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -19,7 +19,11 @@ function oldestPendingPerPolicy(payments: PaymentWithContext[]): PaymentWithCont
 
 export function PendingPaymentsList({ payments }: { payments: PaymentWithContext[] }) {
   const pending = oldestPendingPerPolicy(payments.filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar'))
-    .sort((a, b) => (calculateDaysOverdue(b.dueDate, today()) ?? -1) - (calculateDaysOverdue(a.dueDate, today()) ?? -1))
+    .sort(
+      (a, b) =>
+        (calculateDaysOverdue(effectiveDueDate(b.yearMonth, b.dueDate), today()) ?? -1) -
+        (calculateDaysOverdue(effectiveDueDate(a.yearMonth, a.dueDate), today()) ?? -1),
+    )
     .slice(0, 8)
 
   return (
@@ -36,7 +40,7 @@ export function PendingPaymentsList({ payments }: { payments: PaymentWithContext
         ) : (
           <ul className="divide-y divide-slate-100">
             {pending.map((payment) => {
-              const overdue = calculateDaysOverdue(payment.dueDate, today())
+              const overdue = calculateDaysOverdue(effectiveDueDate(payment.yearMonth, payment.dueDate), today())
               return (
                 <li key={payment.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
@@ -55,14 +59,14 @@ export function PendingPaymentsList({ payments }: { payments: PaymentWithContext
                     <div className="flex gap-1">
                       {payment.affiliate.phone && (
                         <>
-                          <a href={`tel:${payment.affiliate.phone}`} className="rounded p-1.5 text-slate-400 hover:bg-slate-100" title="Llamar" aria-label="Llamar">
+                          <a href={`tel:${payment.affiliate.phone}`} className="rounded p-1.5 text-blue-500 hover:bg-blue-50" title="Llamar" aria-label="Llamar">
                             <Phone className="h-4 w-4" />
                           </a>
                           <a
                             href={`https://wa.me/${payment.affiliate.phone.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100"
+                            className="rounded p-1.5 text-emerald-500 hover:bg-emerald-50"
                             title="WhatsApp" aria-label="WhatsApp"
                           >
                             <MessageCircle className="h-4 w-4" />
@@ -70,7 +74,7 @@ export function PendingPaymentsList({ payments }: { payments: PaymentWithContext
                         </>
                       )}
                       {payment.affiliate.email && (
-                        <a href={`mailto:${payment.affiliate.email}`} className="rounded p-1.5 text-slate-400 hover:bg-slate-100" title="Correo" aria-label="Correo">
+                        <a href={`mailto:${payment.affiliate.email}`} className="rounded p-1.5 text-red-500 hover:bg-red-50" title="Correo" aria-label="Correo">
                           <Mail className="h-4 w-4" />
                         </a>
                       )}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import { usePayments, type PaymentWithContext } from '@/hooks/usePayments'
-import { calculateDaysOverdue } from '@/domain'
+import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/format'
 
 /** Días de anticipación para avisar de un pago "por vencer" (mismo horizonte que el aviso de fin de período). */
@@ -12,6 +12,11 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 function daysUntilDue(dueDate: string, referenceDate: string): number {
   return Math.floor((new Date(dueDate).getTime() - new Date(referenceDate).getTime()) / 86_400_000)
+}
+
+interface UnpaidAlert {
+  payment: PaymentWithContext
+  dueDate: string
 }
 
 function AlertRow({ payment, tone, text }: { payment: PaymentWithContext; tone: 'danger' | 'warning'; text: string }) {
@@ -45,15 +50,17 @@ export function NotificationsBell() {
 
   if (loading) return null
 
-  const unpaid = payments.filter((p) => (p.status === 'no_pagado' || p.status === 'pendiente_confirmar') && p.dueDate)
+  const unpaid: UnpaidAlert[] = payments
+    .filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar')
+    .map((p) => ({ payment: p, dueDate: effectiveDueDate(p.yearMonth, p.dueDate) }))
 
   const overdue = unpaid
-    .filter((p) => calculateDaysOverdue(p.dueDate, today()) != null)
+    .filter(({ dueDate }) => calculateDaysOverdue(dueDate, today()) != null)
     .sort((a, b) => (calculateDaysOverdue(b.dueDate, today()) ?? 0) - (calculateDaysOverdue(a.dueDate, today()) ?? 0))
 
   const upcoming = unpaid
-    .filter((p) => calculateDaysOverdue(p.dueDate, today()) == null && daysUntilDue(p.dueDate!, today()) <= UPCOMING_WINDOW_DAYS)
-    .sort((a, b) => daysUntilDue(a.dueDate!, today()) - daysUntilDue(b.dueDate!, today()))
+    .filter(({ dueDate }) => calculateDaysOverdue(dueDate, today()) == null && daysUntilDue(dueDate, today()) <= UPCOMING_WINDOW_DAYS)
+    .sort((a, b) => daysUntilDue(a.dueDate, today()) - daysUntilDue(b.dueDate, today()))
 
   const total = overdue.length + upcoming.length
 
@@ -88,8 +95,13 @@ export function NotificationsBell() {
                   <div className="mb-2">
                     <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-red-600">Pagos vencidos</p>
                     <ul className="space-y-0.5">
-                      {overdue.map((p) => (
-                        <AlertRow key={p.id} payment={p} tone="danger" text={`${calculateDaysOverdue(p.dueDate, today())} días de atraso`} />
+                      {overdue.map(({ payment, dueDate }) => (
+                        <AlertRow
+                          key={payment.id}
+                          payment={payment}
+                          tone="danger"
+                          text={`${calculateDaysOverdue(dueDate, today())} días de atraso`}
+                        />
                       ))}
                     </ul>
                   </div>
@@ -98,14 +110,14 @@ export function NotificationsBell() {
                   <div>
                     <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-amber-600">Por vencer</p>
                     <ul className="space-y-0.5">
-                      {upcoming.map((p) => {
-                        const days = daysUntilDue(p.dueDate!, today())
+                      {upcoming.map(({ payment, dueDate }) => {
+                        const days = daysUntilDue(dueDate, today())
                         return (
                           <AlertRow
-                            key={p.id}
-                            payment={p}
+                            key={payment.id}
+                            payment={payment}
                             tone="warning"
-                            text={days === 0 ? `vence hoy (${formatDate(p.dueDate!)})` : `vence en ${days} día${days === 1 ? '' : 's'}`}
+                            text={days === 0 ? `vence hoy (${formatDate(dueDate)})` : `vence en ${days} día${days === 1 ? '' : 's'}`}
                           />
                         )
                       })}

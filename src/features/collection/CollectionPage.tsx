@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { fieldClass } from '@/components/ui/FormField'
 import { TableRowsSkeleton } from '@/components/ui/Skeleton'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
-import { calculateDaysOverdue } from '@/domain'
+import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
 import type { Affiliate, PaymentStatus } from '@/types/domain'
 import { PaymentFormModal } from './PaymentFormModal'
 import { PaymentHistoryModal } from './PaymentHistoryModal'
@@ -58,7 +58,7 @@ function groupByAffiliate(items: PaymentWithContext[]): AffiliateSummary[] {
     } else if (payment.status === 'no_pagado' || payment.status === 'pendiente_confirmar') {
       summary.pendingCount += 1
       summary.totalPending += payment.expectedAmount
-      const overdue = calculateDaysOverdue(payment.dueDate, today())
+      const overdue = calculateDaysOverdue(effectiveDueDate(payment.yearMonth, payment.dueDate), today())
       if (overdue != null && (summary.maxOverdue == null || overdue > summary.maxOverdue)) summary.maxOverdue = overdue
     }
   }
@@ -207,7 +207,7 @@ export function CollectionPage() {
                           <>
                             <a
                               href={`tel:${summary.affiliate.phone}`}
-                              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                              className="rounded p-1.5 text-blue-500 hover:bg-blue-50"
                               title="Llamar" aria-label="Llamar"
                             >
                               <Phone className="h-4 w-4" />
@@ -216,7 +216,7 @@ export function CollectionPage() {
                               href={`https://wa.me/${summary.affiliate.phone.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                              className="rounded p-1.5 text-emerald-500 hover:bg-emerald-50"
                               title="WhatsApp" aria-label="WhatsApp"
                             >
                               <MessageCircle className="h-4 w-4" />
@@ -226,7 +226,7 @@ export function CollectionPage() {
                         {summary.affiliate.email && (
                           <a
                             href={`mailto:${summary.affiliate.email}`}
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                            className="rounded p-1.5 text-red-500 hover:bg-red-50"
                             title="Correo" aria-label="Correo"
                           >
                             <Mail className="h-4 w-4" />
@@ -283,14 +283,14 @@ export function CollectionPage() {
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                       {summary.affiliate.phone && (
                         <>
-                          <a href={`tel:${summary.affiliate.phone}`} className="rounded p-2 text-slate-400 hover:bg-slate-100" title="Llamar" aria-label="Llamar">
+                          <a href={`tel:${summary.affiliate.phone}`} className="rounded p-2 text-blue-500 hover:bg-blue-50" title="Llamar" aria-label="Llamar">
                             <Phone className="h-4 w-4" />
                           </a>
                           <a
                             href={`https://wa.me/${summary.affiliate.phone.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded p-2 text-slate-400 hover:bg-slate-100"
+                            className="rounded p-2 text-emerald-500 hover:bg-emerald-50"
                             title="WhatsApp" aria-label="WhatsApp"
                           >
                             <MessageCircle className="h-4 w-4" />
@@ -298,7 +298,7 @@ export function CollectionPage() {
                         </>
                       )}
                       {summary.affiliate.email && (
-                        <a href={`mailto:${summary.affiliate.email}`} className="rounded p-2 text-slate-400 hover:bg-slate-100" title="Correo" aria-label="Correo">
+                        <a href={`mailto:${summary.affiliate.email}`} className="rounded p-2 text-red-500 hover:bg-red-50" title="Correo" aria-label="Correo">
                           <Mail className="h-4 w-4" />
                         </a>
                       )}

@@ -58,6 +58,17 @@ export function defaultDueDateForMonth(yearMonth: string): string {
 }
 
 /**
+ * Fecha de vencimiento a usar en pantalla: la registrada en el pago si
+ * existe (manual o autogenerada), o si no — pagos que quedaron sin due_date
+ * de antes de que la app empezara a fijarlo sola — la fecha de corte por
+ * defecto del mes (día 15). Así "Pendiente" vs "No pagado" se calcula bien
+ * en todos los pagos, sin depender de haber corrido ninguna migración.
+ */
+export function effectiveDueDate(yearMonth: string, dueDate: string | null): string {
+  return dueDate ?? defaultDueDateForMonth(yearMonth)
+}
+
+/**
  * Estado a mostrar en pantalla para un pago. Aunque en base de datos un mes
  * recién generado ya queda como 'no_pagado' (para poder listarlo desde ya,
  * sección 19), no corresponde alarmar a la asesora con "No pagado" antes de
