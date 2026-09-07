@@ -85,6 +85,14 @@ export interface IcvRecord {
   notes: string | null
 }
 
+/** Registro manual de un mes ya pagado por Interseguro antes de usar el sistema de períodos (sección "historial de sueldos"). No participa en ningún cálculo de incentivo, es solo para ver la evolución de ingresos en el tiempo. */
+export interface HistoricalIncome {
+  id: string
+  yearMonth: string // 'YYYY-MM-01'
+  amount: number
+  notes: string | null
+}
+
 export interface GoalProgress {
   goal: number
   actual: number

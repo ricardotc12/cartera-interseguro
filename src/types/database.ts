@@ -120,6 +120,17 @@ type IcvRecordRow = {
   updated_by: string | null
 }
 
+type HistoricalIncomeRow = {
+  id: string
+  year_month: string
+  amount: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+  updated_by: string | null
+}
+
 type AuditLogRow = {
   id: string
   table_name: string
@@ -227,6 +238,12 @@ export interface Database {
             referencedColumns: ['id']
           },
         ]
+      }
+      historical_incomes: {
+        Row: HistoricalIncomeRow
+        Insert: WritableInsert<HistoricalIncomeRow, 'id' | 'created_at' | 'updated_at' | 'updated_by'>
+        Update: WritableUpdate<HistoricalIncomeRow, 'id' | 'created_at' | 'updated_at'>
+        Relationships: []
       }
       audit_log: {
         Row: AuditLogRow

@@ -11,13 +11,15 @@ import { fieldClass } from '@/components/ui/FormField'
 import { downloadCsv } from '@/lib/csv'
 import { formatDate } from '@/lib/format'
 import type { AffiliateStatus, PaymentStatus } from '@/types/domain'
+import { HistoricalIncomesReport } from './HistoricalIncomesReport'
 
-type ReportTab = 'afiliados' | 'cobranza' | 'periodos'
+type ReportTab = 'afiliados' | 'cobranza' | 'periodos' | 'historial'
 
 const REPORT_TABS: { value: ReportTab; label: string }[] = [
   { value: 'afiliados', label: 'Afiliados' },
   { value: 'cobranza', label: 'Cobranza y pendientes' },
   { value: 'periodos', label: 'Emisión Vida, Incentivos e ICV' },
+  { value: 'historial', label: 'Historial de sueldos' },
 ]
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -31,6 +33,7 @@ export function ReportsPage() {
       {tab === 'afiliados' && <AffiliatesReport />}
       {tab === 'cobranza' && <CollectionReport />}
       {tab === 'periodos' && <PeriodsReport />}
+      {tab === 'historial' && <HistoricalIncomesReport />}
     </div>
   )
 }
