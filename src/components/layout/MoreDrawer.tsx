@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, KeyRound } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { navItems } from '@/routes/navItems'
 import { useAuth } from '@/hooks/useAuth'
 import { clsx } from '@/lib/clsx'
+import { ChangePasswordModal } from './ChangePasswordModal'
 
 export function MoreDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { signOut, user } = useAuth()
   const secondaryItems = navItems.filter((item) => !item.primaryMobile)
+  const [changingPassword, setChangingPassword] = useState(false)
 
   if (!open) return null
 
@@ -37,6 +40,13 @@ export function MoreDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         <div className="mt-3 border-t border-slate-100 pt-3">
           <div className="mb-2 truncate px-3 text-xs text-slate-400">{user?.email}</div>
           <button
+            onClick={() => setChangingPassword(true)}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          >
+            <KeyRound className="h-5 w-5" />
+            Cambiar contraseña
+          </button>
+          <button
             onClick={signOut}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
           >
@@ -45,6 +55,8 @@ export function MoreDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           </button>
         </div>
       </div>
+
+      <ChangePasswordModal open={changingPassword} onClose={() => setChangingPassword(false)} />
     </div>,
     document.body,
   )

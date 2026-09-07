@@ -1,12 +1,15 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, KeyRound } from 'lucide-react'
 import { navItems } from '@/routes/navItems'
 import { useAuth } from '@/hooks/useAuth'
 import { clsx } from '@/lib/clsx'
 import { BrandLogo } from './BrandLogo'
+import { ChangePasswordModal } from './ChangePasswordModal'
 
 export function Sidebar() {
   const { signOut, user } = useAuth()
+  const [changingPassword, setChangingPassword] = useState(false)
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
@@ -42,6 +45,13 @@ export function Sidebar() {
       <div className="border-t border-slate-100 p-3">
         <div className="mb-2 truncate px-3 text-xs text-slate-400">{user?.email}</div>
         <button
+          onClick={() => setChangingPassword(true)}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+        >
+          <KeyRound className="h-5 w-5" />
+          Cambiar contraseña
+        </button>
+        <button
           onClick={signOut}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
         >
@@ -49,6 +59,8 @@ export function Sidebar() {
           Cerrar sesión
         </button>
       </div>
+
+      <ChangePasswordModal open={changingPassword} onClose={() => setChangingPassword(false)} />
     </aside>
   )
 }
