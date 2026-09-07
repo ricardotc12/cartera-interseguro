@@ -6,10 +6,10 @@ import {
   calculateCollectionRatio,
   calculateFinalIncentive,
   calculateICVFactor,
-  calculateIncentivePercentage,
+  findIncentiveTier,
   calculateVidaEmission,
 } from '@/domain'
-import type { PaymentStatus } from '@/types/domain'
+import type { IncentiveRule, PaymentStatus } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
 import { useProfile } from './useProfile'
 
@@ -17,7 +17,7 @@ export interface PeriodMetrics {
   totalAffiliationAmount: number
   newPoliciesCount: number
   vidaEmission: number
-  incentivePercentage: number | null
+  incentiveTier: IncentiveRule | null
   baseIncentive: number | null
   collectionRatio: number | null
   collectionFactor: number | null
@@ -69,8 +69,8 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
 
       const totalAffiliationAmount = (policiesResult.data ?? []).reduce((sum, p) => sum + p.affiliation_amount, 0)
       const vidaEmission = calculateVidaEmission(totalAffiliationAmount, period.vidaEmissionMultiplier)
-      const incentivePercentage = calculateIncentivePercentage(vidaEmission, period.incentiveRules)
-      const baseIncentive = incentivePercentage != null ? calculateBaseIncentive(vidaEmission, incentivePercentage) : null
+      const incentiveTier = findIncentiveTier(vidaEmission, period.incentiveRules)
+      const baseIncentive = incentiveTier != null ? calculateBaseIncentive(vidaEmission, incentiveTier) : null
 
       const billablePayments = (paymentsResult.data ?? []).map((p) => ({
         expectedAmount: p.expected_amount,
@@ -102,7 +102,7 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
         totalAffiliationAmount,
         newPoliciesCount: (policiesResult.data ?? []).length,
         vidaEmission,
-        incentivePercentage,
+        incentiveTier,
         baseIncentive,
         collectionRatio,
         collectionFactor,

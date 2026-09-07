@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { TierEditor, newTierRow, type TierRowState } from './TierEditor'
-import type { PeriodInput, PeriodRulesPayload, PeriodWithRules } from '@/hooks/usePeriodsAdmin'
+import { IncentiveTierEditor, newIncentiveTierRow, type IncentiveTierRowState } from './IncentiveTierEditor'
+import type { IncentiveTierInput, PeriodInput, PeriodRulesPayload, PeriodWithRules } from '@/hooks/usePeriodsAdmin'
 import type { CollectionFactorRule, IcvFactorRule, IncentiveRule } from '@/types/domain'
 
 type RuleSource = 'keep' | 'copy' | 'new'
@@ -18,18 +19,28 @@ interface PeriodFormPageProps {
   onCancel: () => void
 }
 
-function incentiveRulesToRows(rules: IncentiveRule[]): TierRowState[] {
-  return rules.map((r) => ({ id: r.id, min: String(r.min), max: r.max == null ? '' : String(r.max), value: String(r.percentage * 100) }))
+function incentiveRulesToRows(rules: IncentiveRule[]): IncentiveTierRowState[] {
+  return rules.map((r) => ({
+    id: r.id,
+    min: String(r.min),
+    max: r.max == null ? '' : String(r.max),
+    valueType: r.valueType,
+    value: r.valueType === 'fixed' ? String(r.fixedAmount) : String(r.percentage * 100),
+  }))
 }
 
 function factorRulesToRows(rules: (CollectionFactorRule | IcvFactorRule)[]): TierRowState[] {
   return rules.map((r) => ({ id: r.id, min: String(r.min), max: r.max == null ? '' : String(r.max), value: String(r.factor) }))
 }
 
-function rowsToIncentivePayload(rows: TierRowState[]) {
+function rowsToIncentivePayload(rows: IncentiveTierRowState[]): IncentiveTierInput[] {
   return rows
     .filter((r) => r.min !== '' && r.value !== '')
-    .map((r) => ({ min: Number(r.min), max: r.max === '' ? null : Number(r.max), percentage: Number(r.value) / 100 }))
+    .map((r) =>
+      r.valueType === 'fixed'
+        ? { min: Number(r.min), max: r.max === '' ? null : Number(r.max), valueType: 'fixed' as const, fixedAmount: Number(r.value) }
+        : { min: Number(r.min), max: r.max === '' ? null : Number(r.max), valueType: 'percentage' as const, percentage: Number(r.value) / 100 },
+    )
 }
 
 function rowsToFactorPayload(rows: TierRowState[]) {
@@ -51,8 +62,8 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
   const [collectionGoal, setCollectionGoal] = useState(base?.collectionGoal != null ? String(base.collectionGoal) : '')
   const [notes, setNotes] = useState(base?.notes ?? '')
 
-  const [incentiveRows, setIncentiveRows] = useState<TierRowState[]>(
-    base ? incentiveRulesToRows(base.incentiveRules) : [newTierRow()],
+  const [incentiveRows, setIncentiveRows] = useState<IncentiveTierRowState[]>(
+    base ? incentiveRulesToRows(base.incentiveRules) : [newIncentiveTierRow()],
   )
   const [collectionRows, setCollectionRows] = useState<TierRowState[]>(
     base ? factorRulesToRows(base.collectionFactorRules) : [newTierRow()],
@@ -70,7 +81,7 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
     setRuleSource(next)
     if (!sourcePeriod) return
     if (next === 'new') {
-      setIncentiveRows([newTierRow()])
+      setIncentiveRows([newIncentiveTierRow()])
       setCollectionRows([newTierRow()])
       setIcvRows([newTierRow()])
     } else {
@@ -266,16 +277,7 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
       <Card>
         <CardBody className="space-y-6">
           <div>
-            <TierEditor
-              title="Tramos de % Incentivo (según Emisión Vida en S/)"
-              rows={incentiveRows}
-              onChange={setIncentiveRows}
-              minLabel="Emisión Vida"
-              valueLabel="% Incentivo"
-              minUnit="S/"
-              valueUnit="%"
-              readOnly={rulesReadOnly}
-            />
+            <IncentiveTierEditor rows={incentiveRows} onChange={setIncentiveRows} readOnly={rulesReadOnly} />
             {fieldErrors.incentiveRows && <p className="mt-1 text-xs text-red-600">{fieldErrors.incentiveRows}</p>}
           </div>
           <TierEditor

@@ -37,7 +37,7 @@ function normalizeOnBlur(raw: string): string {
   return Number.isFinite(n) ? n.toFixed(2) : raw
 }
 
-function UnitInput({
+export function UnitInput({
   value,
   onChange,
   placeholder,

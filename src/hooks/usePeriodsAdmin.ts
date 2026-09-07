@@ -19,9 +19,8 @@ export interface TierInput {
   max: number | null
 }
 
-export interface IncentiveTierInput extends TierInput {
-  percentage: number
-}
+export type IncentiveTierInput = TierInput &
+  ({ valueType: 'percentage'; percentage: number } | { valueType: 'fixed'; fixedAmount: number })
 
 export interface FactorTierInput extends TierInput {
   factor: number
@@ -41,8 +40,8 @@ export interface PeriodWithRules extends IncentivePeriod {
   incentiveRules: IncentiveRule[]
   collectionFactorRules: CollectionFactorRule[]
   icvFactorRules: IcvFactorRule[]
-  /** Resumen para la tabla de administración (sección 11). */
-  maxIncentivePercentage: number | null
+  /** Resumen para la tabla de administración (sección 11): el tramo más alto configurado (puede ser monto fijo o porcentaje). */
+  topIncentiveTier: IncentiveRule | null
   maxCollectionFactor: number | null
   maxIcvFactor: number | null
 }
@@ -62,14 +61,45 @@ interface PeriodRow {
   updated_at: string
   created_by: string
   updated_by: string | null
-  incentive_rules: { id: string; period_id: string; min_amount: number; max_amount: number | null; percentage: number; sort_order: number }[]
+  incentive_rules: {
+    id: string
+    period_id: string
+    min_amount: number
+    max_amount: number | null
+    value_type: 'percentage' | 'fixed'
+    percentage: number | null
+    fixed_amount: number | null
+    sort_order: number
+  }[]
   collection_factor_rules: { id: string; period_id: string; min_ratio: number; max_ratio: number | null; factor: number; sort_order: number }[]
   icv_factor_rules: { id: string; period_id: string; min_ratio: number; max_ratio: number | null; factor: number; sort_order: number }[]
 }
 
 function mapPeriod(row: PeriodRow): PeriodWithRules {
   const incentiveRules: IncentiveRule[] = row.incentive_rules
-    .map((r) => ({ id: r.id, periodId: r.period_id, min: r.min_amount, max: r.max_amount, sortOrder: r.sort_order, percentage: r.percentage }))
+    .map((r): IncentiveRule =>
+      r.value_type === 'fixed'
+        ? {
+            id: r.id,
+            periodId: r.period_id,
+            min: r.min_amount,
+            max: r.max_amount,
+            sortOrder: r.sort_order,
+            valueType: 'fixed',
+            fixedAmount: r.fixed_amount as number,
+            percentage: null,
+          }
+        : {
+            id: r.id,
+            periodId: r.period_id,
+            min: r.min_amount,
+            max: r.max_amount,
+            sortOrder: r.sort_order,
+            valueType: 'percentage',
+            percentage: r.percentage as number,
+            fixedAmount: null,
+          },
+    )
     .sort((a, b) => a.sortOrder - b.sortOrder)
   const collectionFactorRules: CollectionFactorRule[] = row.collection_factor_rules
     .map((r) => ({ id: r.id, periodId: r.period_id, min: r.min_ratio, max: r.max_ratio, sortOrder: r.sort_order, factor: r.factor }))
@@ -96,7 +126,10 @@ function mapPeriod(row: PeriodRow): PeriodWithRules {
     incentiveRules,
     collectionFactorRules,
     icvFactorRules,
-    maxIncentivePercentage: incentiveRules.length ? Math.max(...incentiveRules.map((r) => r.percentage)) : null,
+    topIncentiveTier: incentiveRules.reduce<IncentiveRule | null>(
+      (top, r) => (top == null || r.min > top.min ? r : top),
+      null,
+    ),
     maxCollectionFactor: collectionFactorRules.length ? Math.max(...collectionFactorRules.map((r) => r.factor)) : null,
     maxIcvFactor: icvFactorRules.length ? Math.max(...icvFactorRules.map((r) => r.factor)) : null,
   }
@@ -148,7 +181,9 @@ export function usePeriodsAdmin() {
           period_id: periodId,
           min_amount: r.min,
           max_amount: r.max,
-          percentage: r.percentage,
+          value_type: r.valueType,
+          percentage: r.valueType === 'percentage' ? r.percentage : null,
+          fixed_amount: r.valueType === 'fixed' ? r.fixedAmount : null,
           sort_order: i,
           created_by: user.id,
         })),

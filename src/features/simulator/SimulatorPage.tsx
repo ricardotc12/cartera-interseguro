@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { usePeriodsAdmin, type PeriodWithRules } from '@/hooks/usePeriodsAdmin'
-import { calculatePeriodForDate, calculateVidaEmission, calculateIncentivePercentage, calculateBaseIncentive, calculateCollectionFactor, calculateICVFactor, calculateFinalIncentive } from '@/domain'
+import { calculatePeriodForDate, calculateVidaEmission, findIncentiveTier, calculateBaseIncentive, calculateCollectionFactor, calculateICVFactor, calculateFinalIncentive } from '@/domain'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
-import { formatCurrency, formatPercentage } from '@/lib/format'
+import { formatCurrency, formatIncentiveTierValue } from '@/lib/format'
 
 function useSimulation(period: PeriodWithRules | undefined, affiliationsCount: string, avgAmount: string, collectionRatio: string, icvRatio: string) {
   return useMemo(() => {
@@ -13,8 +13,8 @@ function useSimulation(period: PeriodWithRules | undefined, affiliationsCount: s
     const amount = Number(avgAmount) || 0
     const totalAffiliation = count * amount
     const vidaEmission = calculateVidaEmission(totalAffiliation, period.vidaEmissionMultiplier)
-    const incentivePercentage = calculateIncentivePercentage(vidaEmission, period.incentiveRules)
-    const baseIncentive = incentivePercentage != null ? calculateBaseIncentive(vidaEmission, incentivePercentage) : null
+    const incentiveTier = findIncentiveTier(vidaEmission, period.incentiveRules)
+    const baseIncentive = incentiveTier != null ? calculateBaseIncentive(vidaEmission, incentiveTier) : null
 
     const ratio = collectionRatio === '' ? null : Number(collectionRatio)
     const collectionFactor = ratio != null ? calculateCollectionFactor(ratio, period.collectionFactorRules) : null
@@ -27,7 +27,7 @@ function useSimulation(period: PeriodWithRules | undefined, affiliationsCount: s
         ? calculateFinalIncentive(baseIncentive, collectionFactor, icvFactor)
         : null
 
-    return { totalAffiliation, vidaEmission, incentivePercentage, baseIncentive, collectionFactor, icvFactor, finalIncentive }
+    return { totalAffiliation, vidaEmission, incentiveTier, baseIncentive, collectionFactor, icvFactor, finalIncentive }
   }, [period, affiliationsCount, avgAmount, collectionRatio, icvRatio])
 }
 
@@ -128,8 +128,8 @@ export function SimulatorPage() {
             <Row label="Total afiliaciones" value={formatCurrency(result?.totalAffiliation ?? 0)} />
             <Row label="Emisión Vida" value={formatCurrency(result?.vidaEmission ?? 0)} />
             <Row
-              label="% Incentivo"
-              value={result?.incentivePercentage != null ? formatPercentage(result.incentivePercentage, 0) : 'Sin tramo configurado'}
+              label="Tramo de Incentivo"
+              value={result?.incentiveTier ? formatIncentiveTierValue(result.incentiveTier) : 'Sin tramo configurado'}
             />
             <Row label="Incentivo Base" value={result?.baseIncentive != null ? formatCurrency(result.baseIncentive) : '—'} />
             <Row label="Factor Cobranza" value={result?.collectionFactor != null ? result.collectionFactor.toFixed(2) : '—'} />

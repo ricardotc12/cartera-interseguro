@@ -11,7 +11,7 @@ import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
-import { formatCurrency, formatDate, formatPercentage, formatPoints } from '@/lib/format'
+import { formatCurrency, formatDate, formatIncentiveTierValue, formatPoints } from '@/lib/format'
 import { PERIOD_STATUS_TONE, PERIOD_STATUS_LABEL } from '@/lib/periodStatus'
 import { IndicatorCard } from './IndicatorCard'
 import { PeriodsHistoryCharts } from './PeriodsHistoryCharts'
@@ -103,8 +103,9 @@ export function DashboardPage() {
         />
         <IndicatorCard label="Emisión Vida" value={formatCurrency(metrics.vidaEmission)} icon={TrendingUp} tone="primary" />
         <IndicatorCard
-          label="% Incentivo"
-          value={metrics.incentivePercentage != null ? formatPercentage(metrics.incentivePercentage, 0) : '—'}
+          label="Tramo de Incentivo"
+          value={formatIncentiveTierValue(metrics.incentiveTier)}
+          hint={metrics.incentiveTier?.valueType === 'fixed' ? 'Monto fijo' : undefined}
           icon={Percent}
           tone="secondary"
         />

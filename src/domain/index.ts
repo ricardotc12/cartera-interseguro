@@ -1,5 +1,5 @@
 export { calculateVidaEmission } from './vidaEmission'
-export { calculateIncentivePercentage, calculateBaseIncentive, calculateFinalIncentive } from './incentive'
+export { findIncentiveTier, calculateBaseIncentive, calculateFinalIncentive } from './incentive'
 export { calculateCollectionRatio, calculateCollectionFactor } from './collection'
 export { calculateICVFactor } from './icv'
 export { calculateGoalProgress } from './goals'

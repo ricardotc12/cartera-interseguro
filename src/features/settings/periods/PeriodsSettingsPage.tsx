@@ -6,7 +6,7 @@ import { Card, CardBody } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { formatDate, formatCurrency, formatPercentage } from '@/lib/format'
+import { formatDate, formatCurrency, formatIncentiveTierValue } from '@/lib/format'
 import { PeriodFormPage } from './PeriodFormPage'
 import { AuditLogPanel } from './AuditLogPanel'
 
@@ -110,7 +110,7 @@ export function PeriodsSettingsPage() {
                   <th className="px-4 py-3 font-medium">Fecha fin</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
                   <th className="px-4 py-3 font-medium">Meta</th>
-                  <th className="px-4 py-3 font-medium">% máx. incentivo</th>
+                  <th className="px-4 py-3 font-medium">Tramo máx. incentivo</th>
                   <th className="px-4 py-3 font-medium">Factor ICV máx.</th>
                   <th className="px-4 py-3 font-medium">Factor Cobranza máx.</th>
                   <th className="px-4 py-3 font-medium" />
@@ -126,9 +126,7 @@ export function PeriodsSettingsPage() {
                       <Badge tone={STATUS_TONE[period.status]} dot>{STATUS_LABEL[period.status]}</Badge>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{formatCurrency(period.vidaEmissionGoal)}</td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {period.maxIncentivePercentage != null ? formatPercentage(period.maxIncentivePercentage, 0) : '—'}
-                    </td>
+                    <td className="px-4 py-3 text-slate-600">{formatIncentiveTierValue(period.topIncentiveTier)}</td>
                     <td className="px-4 py-3 text-slate-600">{period.maxIcvFactor != null ? period.maxIcvFactor.toFixed(2) : '—'}</td>
                     <td className="px-4 py-3 text-slate-600">
                       {period.maxCollectionFactor != null ? period.maxCollectionFactor.toFixed(2) : '—'}

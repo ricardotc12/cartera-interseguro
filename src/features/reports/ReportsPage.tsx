@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Tabs } from '@/components/ui/Tabs'
 import { fieldClass } from '@/components/ui/FormField'
 import { downloadCsv } from '@/lib/csv'
-import { formatDate } from '@/lib/format'
+import { formatDate, formatIncentiveTierValue } from '@/lib/format'
 import type { AffiliateStatus, PaymentStatus } from '@/types/domain'
 import { HistoricalIncomesReport } from './HistoricalIncomesReport'
 
@@ -231,7 +231,8 @@ function PeriodsReport() {
         Estado: r.status,
         'Emisión Vida': r.vidaEmission,
         'Meta Emisión Vida': r.vidaEmissionGoal,
-        '% Incentivo': r.incentivePercentage ?? '',
+        '% Incentivo': r.incentiveTier?.valueType === 'percentage' ? r.incentiveTier.percentage : '',
+        'Monto fijo Incentivo': r.incentiveTier?.valueType === 'fixed' ? r.incentiveTier.fixedAmount : '',
         'Incentivo Base': r.baseIncentive ?? '',
         'Ratio Cobranza': r.collectionRatio ?? '',
         'Factor Cobranza': r.collectionFactor ?? '',
@@ -261,7 +262,7 @@ function PeriodsReport() {
                 <tr>
                   <th className="px-4 py-2 font-medium">Período</th>
                   <th className="px-4 py-2 font-medium">Emisión Vida</th>
-                  <th className="px-4 py-2 font-medium">% Incentivo</th>
+                  <th className="px-4 py-2 font-medium">Tramo Incentivo</th>
                   <th className="px-4 py-2 font-medium">Incentivo Base</th>
                   <th className="px-4 py-2 font-medium">Ratio Cobranza</th>
                   <th className="px-4 py-2 font-medium">Factor Cobranza</th>
@@ -275,7 +276,7 @@ function PeriodsReport() {
                   <tr key={r.periodId}>
                     <td className="px-4 py-2 font-medium text-slate-900">{r.name}</td>
                     <td className="px-4 py-2 text-slate-600">{r.vidaEmission.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-slate-600">{r.incentivePercentage != null ? `${(r.incentivePercentage * 100).toFixed(0)}%` : '—'}</td>
+                    <td className="px-4 py-2 text-slate-600">{formatIncentiveTierValue(r.incentiveTier)}</td>
                     <td className="px-4 py-2 text-slate-600">{r.baseIncentive != null ? r.baseIncentive.toFixed(2) : '—'}</td>
                     <td className="px-4 py-2 text-slate-600">{r.collectionRatio != null ? `${r.collectionRatio.toFixed(2)}%` : '—'}</td>
                     <td className="px-4 py-2 text-slate-600">{r.collectionFactor != null ? r.collectionFactor.toFixed(2) : '—'}</td>

@@ -27,7 +27,9 @@ type IncentiveRuleRow = {
   period_id: string
   min_amount: number
   max_amount: number | null
-  percentage: number
+  value_type: 'percentage' | 'fixed'
+  percentage: number | null
+  fixed_amount: number | null
   sort_order: number
   created_at: string
   updated_at: string

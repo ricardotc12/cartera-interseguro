@@ -49,9 +49,19 @@ export interface RangeRule {
   sortOrder: number
 }
 
-export interface IncentiveRule extends RangeRule {
-  percentage: number // e.g. 0.13 for 13%
-}
+/**
+ * Tramo de incentivo según Emisión Vida. Interseguro maneja hoy los tramos más
+ * bajos como un MONTO FIJO en soles (no un porcentaje) y solo el tramo más
+ * alto como un porcentaje real; por eso cada tramo declara su propio tipo en
+ * vez de asumir que todos son porcentaje. Cuando Interseguro confirme el
+ * nuevo esquema por porcentajes, cada tramo se reconfigura como 'percentage'
+ * sin necesidad de ningún cambio de código.
+ */
+export type IncentiveRule = RangeRule &
+  (
+    | { valueType: 'percentage'; percentage: number; fixedAmount: null } // e.g. percentage: 0.26 para 26%
+    | { valueType: 'fixed'; fixedAmount: number; percentage: null } // e.g. fixedAmount: 1300 para S/ 1,300
+  )
 
 export interface CollectionFactorRule extends RangeRule {
   factor: number

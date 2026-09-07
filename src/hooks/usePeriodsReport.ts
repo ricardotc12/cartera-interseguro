@@ -1,13 +1,8 @@
 import { useMemo } from 'react'
 import { usePeriodsHistory } from './usePeriodsHistory'
 import { useIcvRecords } from './useIcvRecords'
-import {
-  calculateBaseIncentive,
-  calculateCollectionFactor,
-  calculateFinalIncentive,
-  calculateICVFactor,
-  calculateIncentivePercentage,
-} from '@/domain'
+import { calculateBaseIncentive, calculateCollectionFactor, calculateFinalIncentive, calculateICVFactor, findIncentiveTier } from '@/domain'
+import type { IncentiveRule } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
 
 export interface PeriodReportRow {
@@ -18,7 +13,7 @@ export interface PeriodReportRow {
   status: string
   vidaEmission: number
   vidaEmissionGoal: number
-  incentivePercentage: number | null
+  incentiveTier: IncentiveRule | null
   baseIncentive: number | null
   collectionRatio: number | null
   collectionFactor: number | null
@@ -44,7 +39,7 @@ export function usePeriodsReport(periods: PeriodWithRules[]) {
           status: '',
           vidaEmission: point.vidaEmission,
           vidaEmissionGoal: point.vidaEmissionGoal,
-          incentivePercentage: null,
+          incentiveTier: null,
           baseIncentive: null,
           collectionRatio: point.collectionRatio,
           collectionFactor: null,
@@ -54,8 +49,8 @@ export function usePeriodsReport(periods: PeriodWithRules[]) {
         }
       }
 
-      const incentivePercentage = calculateIncentivePercentage(point.vidaEmission, period.incentiveRules)
-      const baseIncentive = incentivePercentage != null ? calculateBaseIncentive(point.vidaEmission, incentivePercentage) : null
+      const incentiveTier = findIncentiveTier(point.vidaEmission, period.incentiveRules)
+      const baseIncentive = incentiveTier != null ? calculateBaseIncentive(point.vidaEmission, incentiveTier) : null
       const collectionFactor =
         point.collectionRatio != null ? calculateCollectionFactor(point.collectionRatio, period.collectionFactorRules) : null
       const icvRecord = getForPeriod(period.id)
@@ -73,7 +68,7 @@ export function usePeriodsReport(periods: PeriodWithRules[]) {
         status: period.status,
         vidaEmission: point.vidaEmission,
         vidaEmissionGoal: point.vidaEmissionGoal,
-        incentivePercentage,
+        incentiveTier,
         baseIncentive,
         collectionRatio: point.collectionRatio,
         collectionFactor,

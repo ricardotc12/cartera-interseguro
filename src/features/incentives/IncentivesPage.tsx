@@ -6,7 +6,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { calculatePeriodForDate } from '@/domain'
 import { Card, CardBody } from '@/components/ui/Card'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
-import { formatCurrency, formatPercentage, formatPoints } from '@/lib/format'
+import { formatCurrency, formatIncentiveTierValue, formatPoints } from '@/lib/format'
 
 function Step({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -56,8 +56,9 @@ export function IncentivesPage() {
         <Step label="Emisión Vida" value={formatCurrency(metrics.vidaEmission)} hint={`Monto afiliación × ${currentPeriod.vidaEmissionMultiplier}`} />
         <Arrow />
         <Step
-          label="% Incentivo"
-          value={metrics.incentivePercentage != null ? formatPercentage(metrics.incentivePercentage, 0) : 'Sin tramo configurado'}
+          label="Tramo de Incentivo"
+          value={metrics.incentiveTier ? formatIncentiveTierValue(metrics.incentiveTier) : 'Sin tramo configurado'}
+          hint={metrics.incentiveTier?.valueType === 'fixed' ? 'Monto fijo' : undefined}
         />
         <Arrow />
         <Step label="Incentivo Base" value={metrics.baseIncentive != null ? formatCurrency(metrics.baseIncentive) : '—'} />

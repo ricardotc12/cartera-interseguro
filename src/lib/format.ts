@@ -26,6 +26,14 @@ export function formatPercentage(fraction: number, decimals = 2): string {
   return `${(fraction * 100).toFixed(decimals)}%`
 }
 
+/** Valor de un tramo de incentivo tal como corresponde mostrarlo: "26%" si es porcentaje, "S/ 1,300.00" si es monto fijo. */
+export function formatIncentiveTierValue(
+  tier: { valueType: 'percentage' | 'fixed'; percentage: number | null; fixedAmount: number | null } | null,
+): string {
+  if (!tier) return '—'
+  return tier.valueType === 'fixed' ? formatCurrency(tier.fixedAmount as number) : formatPercentage(tier.percentage as number, 0)
+}
+
 /** Formatea un porcentaje ya expresado en puntos (0-100), como los ratios de cobranza/ICV. */
 export function formatPoints(points: number, decimals = 2): string {
   return `${points.toFixed(decimals)}%`
