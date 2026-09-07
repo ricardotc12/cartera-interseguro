@@ -108,21 +108,20 @@ export function DashboardPage() {
           icon={Percent}
           tone="secondary"
         />
-        {profile?.showCollectionRatio || profile?.showIcv ? (
+        <IndicatorCard
+          label="Incentivo Base"
+          value={metrics.baseIncentive != null ? formatCurrency(metrics.baseIncentive) : '—'}
+          hint={profile?.showCollectionRatio && profile?.showIcv ? undefined : 'Sin Factor Cobranza/ICV aún'}
+          icon={Wallet}
+          tone="primary"
+        />
+        {profile?.showCollectionRatio && profile?.showIcv && (
           <IndicatorCard
             label="Incentivo Final"
             value={metrics.finalIncentive != null ? formatCurrency(metrics.finalIncentive) : '—'}
             hint="Incentivo Base × factores activos"
             icon={Award}
             tone="success"
-          />
-        ) : (
-          <IndicatorCard
-            label="Incentivo Base"
-            value={metrics.baseIncentive != null ? formatCurrency(metrics.baseIncentive) : '—'}
-            hint="Sin Factor Cobranza/ICV aún"
-            icon={Wallet}
-            tone="primary"
           />
         )}
         {profile?.showCollectionRatio && (
