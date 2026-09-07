@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Lightbulb } from 'lucide-react'
 import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
 import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
@@ -13,6 +14,13 @@ export function CollectionFactorPage() {
   const currentPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods)
   const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, null)
   const { profile, loading: profileLoading, setShowCollectionRatio } = useProfile()
+  const [toggleError, setToggleError] = useState<string | null>(null)
+
+  async function handleToggle(value: boolean) {
+    setToggleError(null)
+    const result = await setShowCollectionRatio(value)
+    if (result.error) setToggleError(result.error)
+  }
 
   const loading = periodsLoading || metricsLoading
 
@@ -29,7 +37,7 @@ export function CollectionFactorPage() {
         <CardBody>
           <Switch
             checked={profile?.showCollectionRatio ?? false}
-            onChange={setShowCollectionRatio}
+            onChange={handleToggle}
             disabled={profileLoading}
             label="Mostrar Ratio Cobranza en el Dashboard"
           />
@@ -37,6 +45,7 @@ export function CollectionFactorPage() {
             Actívalo cuando confirmes con Interseguro la fórmula oficial de cálculo. Mientras tanto queda oculto del Dashboard, pero
             se sigue calculando aquí y en el Incentivo Final.
           </p>
+          {toggleError && <p className="mt-2 text-xs text-red-600">No se pudo guardar: {toggleError}</p>}
         </CardBody>
       </Card>
 

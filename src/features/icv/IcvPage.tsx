@@ -22,6 +22,13 @@ export function IcvPage() {
   const [notes, setNotes] = useState(record?.notes ?? '')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [toggleError, setToggleError] = useState<string | null>(null)
+
+  async function handleToggle(value: boolean) {
+    setToggleError(null)
+    const result = await setShowIcv(value)
+    if (result.error) setToggleError(result.error)
+  }
 
   const loading = periodsLoading || icvLoading
 
@@ -53,11 +60,12 @@ export function IcvPage() {
     <div className="space-y-4">
       <Card>
         <CardBody>
-          <Switch checked={profile?.showIcv ?? false} onChange={setShowIcv} disabled={profileLoading} label="Mostrar ICV en el Dashboard" />
+          <Switch checked={profile?.showIcv ?? false} onChange={handleToggle} disabled={profileLoading} label="Mostrar ICV en el Dashboard" />
           <p className="mt-1 text-xs text-slate-400">
             Actívalo cuando confirmes con Interseguro la fórmula oficial de cálculo. Mientras tanto queda oculto del Dashboard, pero
             se sigue calculando aquí y en el Incentivo Final.
           </p>
+          {toggleError && <p className="mt-2 text-xs text-red-600">No se pudo guardar: {toggleError}</p>}
         </CardBody>
       </Card>
 
