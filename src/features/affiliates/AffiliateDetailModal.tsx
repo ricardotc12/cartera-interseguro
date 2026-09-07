@@ -3,8 +3,9 @@ import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { formatCurrency, formatDate, formatUsdApprox } from '@/lib/format'
 import { calculatePeriodForDate, calculateVidaEmission } from '@/domain'
+import { useUsdRate } from '@/hooks/useUsdRate'
 import type { IncentivePeriod, Policy } from '@/types/domain'
 import type { AffiliateWithPolicies, PolicyInput } from '@/hooks/useAffiliates'
 import { StatusBadge } from './StatusBadge'
@@ -41,6 +42,7 @@ export function AffiliateDetailModal({
   const [policyModalOpen, setPolicyModalOpen] = useState(false)
   const [editingPolicy, setEditingPolicy] = useState<Policy | undefined>(undefined)
   const [deletingPolicy, setDeletingPolicy] = useState<Policy | undefined>(undefined)
+  const usdRate = useUsdRate()
 
   return (
     <Modal open={open} onClose={onClose} title={`${affiliate.firstName} ${affiliate.lastName}`}>
@@ -99,7 +101,9 @@ export function AffiliateDetailModal({
                     <div>
                       <p className="text-sm font-medium text-slate-900">Póliza {policy.policyNumber}</p>
                       <p className="text-xs text-slate-500">
-                        Monto: {formatCurrency(policy.affiliationAmount)} · Inicio: {formatDate(policy.startDate)}
+                        Monto: {formatCurrency(policy.affiliationAmount)}{' '}
+                        <span className="text-slate-400">({formatUsdApprox(policy.affiliationAmount, usdRate)})</span> · Inicio:{' '}
+                        {formatDate(policy.startDate)}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
                         Emisión Vida: <VidaEmissionCell policy={policy} periods={periods} />

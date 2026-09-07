@@ -4,7 +4,7 @@ interface FormFieldProps {
   label: string
   htmlFor: string
   error?: string | null
-  hint?: string
+  hint?: ReactNode
   children: ReactNode
 }
 

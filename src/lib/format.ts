@@ -4,11 +4,22 @@ const currencyFormatter = new Intl.NumberFormat('es-PE', {
   minimumFractionDigits: 2,
 })
 
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+})
+
 const dateFormatter = new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
 const monthYearFormatter = new Intl.DateTimeFormat('es-PE', { month: 'long', year: 'numeric' })
 
 export function formatCurrency(amount: number): string {
   return currencyFormatter.format(amount)
+}
+
+/** Equivalente aproximado en dólares de un monto en soles, dado el tipo de cambio (dólares por sol) de `useUsdRate`. */
+export function formatUsdApprox(amountInPen: number, usdPerPen: number): string {
+  return `≈ ${usdFormatter.format(amountInPen * usdPerPen)}`
 }
 
 export function formatPercentage(fraction: number, decimals = 2): string {

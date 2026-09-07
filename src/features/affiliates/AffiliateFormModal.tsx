@@ -3,6 +3,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { isValidDni, isValidEmail, isValidAmount } from '@/lib/validators'
+import { formatUsdApprox } from '@/lib/format'
+import { useUsdRate } from '@/hooks/useUsdRate'
 import type { AffiliateInput, AffiliateWithPolicies, PolicyInput } from '@/hooks/useAffiliates'
 import type { AffiliateStatus } from '@/types/domain'
 
@@ -26,6 +28,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, onSubmitEdit }: AffiliateFormModalProps) {
   const isEdit = !!affiliate
+  const usdRate = useUsdRate()
 
   const [dni, setDni] = useState(affiliate?.dni ?? '')
   const [firstName, setFirstName] = useState(affiliate?.firstName ?? '')
@@ -188,7 +191,12 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
                 label="Monto de afiliación (S/)"
                 htmlFor="affiliationAmount"
                 error={fieldErrors.affiliationAmount}
-                hint="La Emisión Vida se calcula automáticamente con el multiplicador del período vigente."
+                hint={
+                  <>
+                    {Number(affiliationAmount) > 0 && <>{formatUsdApprox(Number(affiliationAmount), usdRate)} · </>}
+                    La Emisión Vida se calcula automáticamente con el multiplicador del período vigente.
+                  </>
+                }
               >
                 <input
                   id="affiliationAmount"

@@ -3,6 +3,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { isValidAmount } from '@/lib/validators'
+import { formatUsdApprox } from '@/lib/format'
+import { useUsdRate } from '@/hooks/useUsdRate'
 import type { PolicyInput } from '@/hooks/useAffiliates'
 import type { AffiliateStatus, Policy } from '@/types/domain'
 
@@ -24,6 +26,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormModalProps) {
   const isEdit = !!policy
+  const usdRate = useUsdRate()
 
   const [policyNumber, setPolicyNumber] = useState(policy?.policyNumber ?? '')
   const [affiliationAmount, setAffiliationAmount] = useState(policy ? String(policy.affiliationAmount) : '')
@@ -76,7 +79,12 @@ export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormM
             className={fieldClass(!!fieldErrors.policyNumber)}
           />
         </FormField>
-        <FormField label="Monto de afiliación (S/)" htmlFor="affiliationAmount" error={fieldErrors.affiliationAmount}>
+        <FormField
+          label="Monto de afiliación (S/)"
+          htmlFor="affiliationAmount"
+          error={fieldErrors.affiliationAmount}
+          hint={Number(affiliationAmount) > 0 ? formatUsdApprox(Number(affiliationAmount), usdRate) : undefined}
+        >
           <input
             id="affiliationAmount"
             type="number"
