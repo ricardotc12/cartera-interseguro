@@ -7,9 +7,18 @@ import { formatCurrency, formatMonthYear } from '@/lib/format'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+/** De todos los meses pendientes de una póliza, el que realmente corresponde cobrar ahora es el más antiguo (el resto son meses futuros que aún no vencen). */
+function oldestPendingPerPolicy(payments: PaymentWithContext[]): PaymentWithContext[] {
+  const oldestByPolicy = new Map<string, PaymentWithContext>()
+  for (const payment of payments) {
+    const current = oldestByPolicy.get(payment.policyId)
+    if (!current || payment.yearMonth < current.yearMonth) oldestByPolicy.set(payment.policyId, payment)
+  }
+  return Array.from(oldestByPolicy.values())
+}
+
 export function PendingPaymentsList({ payments }: { payments: PaymentWithContext[] }) {
-  const pending = payments
-    .filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar')
+  const pending = oldestPendingPerPolicy(payments.filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar'))
     .sort((a, b) => (calculateDaysOverdue(b.dueDate, today()) ?? -1) - (calculateDaysOverdue(a.dueDate, today()) ?? -1))
     .slice(0, 8)
 

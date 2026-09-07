@@ -5,6 +5,7 @@ import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
 import { usePeriodsHistory } from '@/hooks/usePeriodsHistory'
 import { useAffiliates } from '@/hooks/useAffiliates'
 import { usePayments } from '@/hooks/usePayments'
+import { useProfile } from '@/hooks/useProfile'
 import { calculatePeriodForDate, calculateGoalProgress } from '@/domain'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -28,8 +29,10 @@ export function DashboardPage() {
   const { history, loading: historyLoading } = usePeriodsHistory(periods)
   const { affiliates, loading: affiliatesLoading } = useAffiliates()
   const { payments, loading: paymentsLoading } = usePayments()
+  const { profile, loading: profileLoading } = useProfile()
 
-  const loading = periodsLoading || icvLoading || metricsLoading || historyLoading || affiliatesLoading || paymentsLoading
+  const loading =
+    periodsLoading || icvLoading || metricsLoading || historyLoading || affiliatesLoading || paymentsLoading || profileLoading
 
   if (loading) {
     return (
@@ -117,20 +120,24 @@ export function DashboardPage() {
           icon={Award}
           tone="success"
         />
-        <IndicatorCard
-          label="Ratio Cobranza"
-          value={metrics.collectionRatio != null ? formatPoints(metrics.collectionRatio) : '—'}
-          hint={metrics.collectionFactor != null ? `Factor ${metrics.collectionFactor.toFixed(2)}` : undefined}
-          icon={Activity}
-          tone="secondary"
-        />
-        <IndicatorCard
-          label="ICV"
-          value={metrics.icvPercentage != null ? formatPoints(metrics.icvPercentage) : 'Sin registrar'}
-          hint={metrics.icvFactor != null ? `Factor ${metrics.icvFactor.toFixed(2)}` : undefined}
-          icon={Gauge}
-          tone="secondary"
-        />
+        {profile?.showCollectionRatio && (
+          <IndicatorCard
+            label="Ratio Cobranza"
+            value={metrics.collectionRatio != null ? formatPoints(metrics.collectionRatio) : '—'}
+            hint={metrics.collectionFactor != null ? `Factor ${metrics.collectionFactor.toFixed(2)}` : undefined}
+            icon={Activity}
+            tone="secondary"
+          />
+        )}
+        {profile?.showIcv && (
+          <IndicatorCard
+            label="ICV"
+            value={metrics.icvPercentage != null ? formatPoints(metrics.icvPercentage) : 'Sin registrar'}
+            hint={metrics.icvFactor != null ? `Factor ${metrics.icvFactor.toFixed(2)}` : undefined}
+            icon={Gauge}
+            tone="secondary"
+          />
+        )}
         <IndicatorCard label="Pagos realizados" value={String(metrics.paidPaymentsCount)} icon={CheckCircle2} tone="success" />
         <IndicatorCard label="Pagos pendientes" value={String(metrics.pendingPaymentsCount)} icon={Clock} tone="warning" />
       </div>

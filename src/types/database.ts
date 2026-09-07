@@ -147,9 +147,16 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; full_name: string | null; role: string; created_at: string }
-        Insert: { id: string; full_name?: string | null; role?: string }
-        Update: { full_name?: string | null; role?: string }
+        Row: {
+          id: string
+          full_name: string | null
+          role: string
+          show_collection_ratio: boolean
+          show_icv: boolean
+          created_at: string
+        }
+        Insert: { id: string; full_name?: string | null; role?: string; show_collection_ratio?: boolean; show_icv?: boolean }
+        Update: { full_name?: string | null; role?: string; show_collection_ratio?: boolean; show_icv?: boolean }
         Relationships: []
       }
       incentive_periods: {

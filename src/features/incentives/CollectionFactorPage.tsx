@@ -1,15 +1,18 @@
 import { Lightbulb } from 'lucide-react'
 import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
 import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
+import { useProfile } from '@/hooks/useProfile'
 import { calculatePeriodForDate, findNextTier } from '@/domain'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
+import { Switch } from '@/components/ui/Switch'
 import { formatPoints } from '@/lib/format'
 
 export function CollectionFactorPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
   const currentPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods)
   const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, null)
+  const { profile, loading: profileLoading, setShowCollectionRatio } = useProfile()
 
   const loading = periodsLoading || metricsLoading
 
@@ -22,6 +25,21 @@ export function CollectionFactorPage() {
 
   return (
     <div className="space-y-4">
+      <Card>
+        <CardBody>
+          <Switch
+            checked={profile?.showCollectionRatio ?? false}
+            onChange={setShowCollectionRatio}
+            disabled={profileLoading}
+            label="Mostrar Ratio Cobranza en el Dashboard"
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            Actívalo cuando confirmes con Interseguro la fórmula oficial de cálculo. Mientras tanto queda oculto del Dashboard, pero
+            se sigue calculando aquí y en el Incentivo Final.
+          </p>
+        </CardBody>
+      </Card>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
