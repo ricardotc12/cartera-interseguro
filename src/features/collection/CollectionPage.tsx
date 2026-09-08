@@ -82,7 +82,10 @@ export function CollectionPage() {
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pendientes')
-  const [monthFilter, setMonthFilter] = useState<string>(currentMonth())
+  // "Todos los meses" por defecto: si un afiliado debe un mes anterior (ej. agosto) mientras
+  // el mes actual ya está "Al día", el estado general del afiliado debe seguir avisando la
+  // deuda vieja, no ocultarla solo porque no es el mes en pantalla.
+  const [monthFilter, setMonthFilter] = useState<string>('todos')
   const [registering, setRegistering] = useState<PaymentWithContext | undefined>(undefined)
   const [editing, setEditing] = useState<PaymentWithContext | undefined>(undefined)
   const [historyFor, setHistoryFor] = useState<Affiliate | undefined>(undefined)
