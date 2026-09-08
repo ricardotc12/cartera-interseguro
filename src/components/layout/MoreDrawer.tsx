@@ -17,7 +17,10 @@ export function MoreDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end md:hidden">
       <div className="absolute inset-0 bg-slate-900/40" onClick={onClose} />
-      <div className="relative max-h-[80vh] w-full overflow-y-auto rounded-t-2xl bg-white p-4 pb-8 shadow-xl">
+      <div
+        className="relative max-h-[80vh] w-full overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl"
+        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
+      >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
         <div className="mb-1 space-y-1">
           {secondaryItems.map((item) => (

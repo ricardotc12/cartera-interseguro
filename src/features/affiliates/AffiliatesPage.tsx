@@ -64,6 +64,14 @@ export function AffiliatesPage() {
     return `${affiliate.policies.length} pólizas`
   }
 
+  /** Para la columna "Póliza" de la tabla de escritorio: el encabezado ya dice "Póliza", no hace falta repetirlo en cada celda. */
+  function policyColumnValue(affiliate: AffiliateWithPolicies): string {
+    const [first, ...rest] = affiliate.policies
+    if (!first) return 'Sin póliza'
+    if (rest.length === 0) return first.policyNumber
+    return `${affiliate.policies.length} pólizas`
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -134,7 +142,7 @@ export function AffiliatesPage() {
                       {affiliate.firstName} {affiliate.lastName}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{affiliate.dni}</td>
-                    <td className="px-4 py-3 text-slate-600">{summarizePolicies(affiliate)}</td>
+                    <td className="px-4 py-3 text-slate-600">{policyColumnValue(affiliate)}</td>
                     <td className="px-4 py-3 text-slate-600">{formatDate(affiliate.affiliationDate)}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={affiliate.status} />
