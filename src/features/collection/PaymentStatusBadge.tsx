@@ -1,14 +1,15 @@
 import { Badge } from '@/components/ui/Badge'
 import type { PaymentStatus } from '@/types/domain'
 
-export type DisplayPaymentStatus = PaymentStatus | 'pendiente'
+export type DisplayPaymentStatus = PaymentStatus | 'pendiente' | 'al_dia'
 
 const toneByStatus: Record<DisplayPaymentStatus, 'success' | 'danger' | 'warning' | 'neutral'> = {
   pagado: 'success',
   no_pagado: 'danger',
   pendiente_confirmar: 'warning',
   no_corresponde: 'neutral',
-  pendiente: 'neutral',
+  pendiente: 'warning',
+  al_dia: 'success',
 }
 
 const labelByStatus: Record<DisplayPaymentStatus, string> = {
@@ -17,6 +18,7 @@ const labelByStatus: Record<DisplayPaymentStatus, string> = {
   pendiente_confirmar: 'Pendiente de confirmar',
   no_corresponde: 'No corresponde',
   pendiente: 'Pendiente',
+  al_dia: 'Al día',
 }
 
 export function PaymentStatusBadge({ status }: { status: DisplayPaymentStatus }) {

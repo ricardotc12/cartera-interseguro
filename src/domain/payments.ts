@@ -46,15 +46,14 @@ export function calculateDaysOverdue(dueDate: string | null, referenceDate: stri
 }
 
 /**
- * Fecha de corte (vencimiento) por defecto de un mes de cobranza: el día 15
- * de ese mismo mes — la asesora confirmó que el ciclo de Interseguro corre
- * del 16 de un mes al 15 del siguiente, y el pago se atribuye/vence en el
- * mes en el que cae ese día 15. Se usa solo al generar el mes por primera
- * vez; si la asesora edita manualmente la fecha de vencimiento de un pago,
- * esa edición manual prevalece siempre.
+ * Fecha de corte (vencimiento) por defecto de un mes de cobranza: el día 20
+ * de ese mismo mes — la asesora confirmó que Interseguro cobra las pólizas
+ * el día 20 de cada mes. Se usa solo al generar el mes por primera vez; si
+ * la asesora edita manualmente la fecha de vencimiento de un pago, esa
+ * edición manual prevalece siempre.
  */
 export function defaultDueDateForMonth(yearMonth: string): string {
-  return `${yearMonth.slice(0, 7)}-15`
+  return `${yearMonth.slice(0, 7)}-20`
 }
 
 /**
@@ -69,20 +68,33 @@ export function effectiveDueDate(yearMonth: string, dueDate: string | null): str
 }
 
 /**
+ * Días de anticipación al vencimiento en que un pago pasa de "Al día" a
+ * "Pendiente": recién un día antes del cobro (el 19, si el cobro es el 20)
+ * empieza a alertar — antes de eso, aunque el mes ya esté generado en base
+ * de datos como 'no_pagado', no hay nada que avisarle todavía a la asesora.
+ */
+export const PENDING_WINDOW_DAYS = 1
+
+/**
  * Estado a mostrar en pantalla para un pago. Aunque en base de datos un mes
  * recién generado ya queda como 'no_pagado' (para poder listarlo desde ya,
- * sección 19), no corresponde alarmar a la asesora con "No pagado" antes de
- * que llegue su fecha de corte: se muestra como "pendiente" hasta el día de
- * vencimiento (inclusive) y recién después pasa a mostrarse como "No
- * pagado". Los demás estados (pagado, pendiente_confirmar, no_corresponde)
- * se muestran tal cual, sin depender de la fecha.
+ * sección 19), no corresponde alarmar a la asesora con "No pagado" (ni
+ * siquiera "Pendiente") mucho antes de que llegue la fecha de cobro:
+ * - Más de `PENDING_WINDOW_DAYS` días antes del vencimiento: "Al día".
+ * - Desde `PENDING_WINDOW_DAYS` días antes y hasta el propio vencimiento
+ *   (inclusive): "Pendiente".
+ * - Pasado el vencimiento: "No pagado".
+ * Los demás estados (pagado, pendiente_confirmar, no_corresponde) se
+ * muestran tal cual, sin depender de la fecha.
  */
 export function getDisplayPaymentStatus(
   status: PaymentStatus,
   dueDate: string | null,
   referenceDate: string,
-): PaymentStatus | 'pendiente' {
+): PaymentStatus | 'pendiente' | 'al_dia' {
   if (status !== 'no_pagado') return status
   if (!dueDate) return status
-  return referenceDate <= dueDate ? 'pendiente' : status
+  if (referenceDate > dueDate) return status
+  const daysUntilDue = Math.round((new Date(dueDate).getTime() - new Date(referenceDate).getTime()) / 86_400_000)
+  return daysUntilDue <= PENDING_WINDOW_DAYS ? 'pendiente' : 'al_dia'
 }

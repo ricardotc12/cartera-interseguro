@@ -10,5 +10,6 @@ export {
   defaultDueDateForMonth,
   effectiveDueDate,
   getDisplayPaymentStatus,
+  PENDING_WINDOW_DAYS,
 } from './payments'
 export { findRangeMatch, findNextTier } from './rangeRules'

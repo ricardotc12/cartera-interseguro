@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import { usePayments, type PaymentWithContext } from '@/hooks/usePayments'
-import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
+import { calculateDaysOverdue, effectiveDueDate, PENDING_WINDOW_DAYS } from '@/domain'
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/format'
 
-/** Días de anticipación para avisar de un pago "por vencer" (mismo horizonte que el aviso de fin de período). */
-const UPCOMING_WINDOW_DAYS = 5
+/** Mismo horizonte que el estado "Pendiente" del pago: recién avisa "por vencer" desde un día antes del cobro. */
+const UPCOMING_WINDOW_DAYS = PENDING_WINDOW_DAYS
 
 const today = () => new Date().toISOString().slice(0, 10)
 
