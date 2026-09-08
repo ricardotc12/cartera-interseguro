@@ -9,6 +9,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // El registro del service worker se hace a mano en src/main.tsx (con
+      // revisión periódica de actualizaciones y recarga automática); si además
+      // se inyecta el script automático, quedaría registrado dos veces.
+      injectRegister: null,
       includeAssets: ['icons/icon-16.png', 'icons/icon-32.png', 'icons/icon-180.png'],
       manifest: {
         name: 'Cartera Interseguro',
