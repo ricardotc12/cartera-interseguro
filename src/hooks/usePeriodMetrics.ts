@@ -16,6 +16,7 @@ import { useProfile } from './useProfile'
 export interface PeriodMetrics {
   totalAffiliationAmount: number
   newPoliciesCount: number
+  newAffiliatesCount: number
   vidaEmission: number
   incentiveTier: IncentiveRule | null
   baseIncentive: number | null
@@ -51,7 +52,11 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
       setLoading(true)
 
       const [policiesResult, paymentsResult] = await Promise.all([
-        supabase.from('policies').select('affiliation_amount').gte('start_date', period.startDate).lte('start_date', period.endDate),
+        supabase
+          .from('policies')
+          .select('affiliate_id, affiliation_amount')
+          .gte('start_date', period.startDate)
+          .lte('start_date', period.endDate),
         supabase
           .from('payments')
           .select('expected_amount, paid_amount, is_rescheduled, status')
@@ -67,7 +72,9 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
         return
       }
 
-      const totalAffiliationAmount = (policiesResult.data ?? []).reduce((sum, p) => sum + p.affiliation_amount, 0)
+      const periodPolicies = policiesResult.data ?? []
+      const totalAffiliationAmount = periodPolicies.reduce((sum, p) => sum + p.affiliation_amount, 0)
+      const newAffiliatesCount = new Set(periodPolicies.map((p) => p.affiliate_id)).size
       const vidaEmission = calculateVidaEmission(totalAffiliationAmount, period.vidaEmissionMultiplier)
       const incentiveTier = findIncentiveTier(vidaEmission, period.incentiveRules)
       const baseIncentive = incentiveTier != null ? calculateBaseIncentive(vidaEmission, incentiveTier) : null
@@ -100,7 +107,8 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
 
       setMetrics({
         totalAffiliationAmount,
-        newPoliciesCount: (policiesResult.data ?? []).length,
+        newPoliciesCount: periodPolicies.length,
+        newAffiliatesCount,
         vidaEmission,
         incentiveTier,
         baseIncentive,

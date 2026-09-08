@@ -96,7 +96,7 @@ export function DashboardPage() {
         <IndicatorCard label="Afiliados activos" value={String(activeAffiliates)} icon={Users} tone="primary" />
         <IndicatorCard
           label="Nuevas afiliaciones"
-          value={String(metrics.newPoliciesCount)}
+          value={String(metrics.newAffiliatesCount)}
           hint="en este período"
           icon={UserPlus}
           tone="secondary"
