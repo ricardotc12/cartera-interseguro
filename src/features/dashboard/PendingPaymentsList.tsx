@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Phone, MessageCircle, Mail } from 'lucide-react'
 import type { PaymentWithContext } from '@/hooks/usePayments'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
-import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
+import { calculateDaysOverdue, effectiveDueDate, getDisplayPaymentStatus } from '@/domain'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
 import { today } from '@/lib/date'
 
@@ -16,8 +16,15 @@ function oldestPendingPerPolicy(payments: PaymentWithContext[]): PaymentWithCont
   return Array.from(oldestByPolicy.values())
 }
 
+/** Un mes recién generado ya es 'no_pagado' en base de datos desde el día 1, pero no corresponde mostrarlo aquí como pendiente hasta que entre en su ventana de cobro ("Al día"/"Pendiente"/"No pagado"). */
+function isActionablePending(payment: PaymentWithContext): boolean {
+  if (payment.status !== 'no_pagado' && payment.status !== 'pendiente_confirmar') return false
+  const dueDate = effectiveDueDate(payment.yearMonth, payment.dueDate)
+  return getDisplayPaymentStatus(payment.status, dueDate, today()) !== 'al_dia'
+}
+
 export function PendingPaymentsList({ payments }: { payments: PaymentWithContext[] }) {
-  const pending = oldestPendingPerPolicy(payments.filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar'))
+  const pending = oldestPendingPerPolicy(payments.filter(isActionablePending))
     .sort(
       (a, b) =>
         (calculateDaysOverdue(effectiveDueDate(b.yearMonth, b.dueDate), today()) ?? -1) -

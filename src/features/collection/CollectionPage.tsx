@@ -7,7 +7,7 @@ import { fieldClass } from '@/components/ui/FormField'
 import { TableRowsSkeleton } from '@/components/ui/Skeleton'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
 import { today } from '@/lib/date'
-import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
+import { calculateDaysOverdue, effectiveDueDate, getDisplayPaymentStatus } from '@/domain'
 import type { Affiliate, PaymentStatus } from '@/types/domain'
 import { PaymentFormModal } from './PaymentFormModal'
 import { PaymentHistoryModal } from './PaymentHistoryModal'
@@ -56,10 +56,17 @@ function groupByAffiliate(items: PaymentWithContext[]): AffiliateSummary[] {
     if (payment.status === 'pagado') {
       summary.paidCount += 1
     } else if (payment.status === 'no_pagado' || payment.status === 'pendiente_confirmar') {
-      summary.pendingCount += 1
-      summary.totalPending += payment.expectedAmount
-      const overdue = calculateDaysOverdue(effectiveDueDate(payment.yearMonth, payment.dueDate), today())
-      if (overdue != null && (summary.maxOverdue == null || overdue > summary.maxOverdue)) summary.maxOverdue = overdue
+      const dueDate = effectiveDueDate(payment.yearMonth, payment.dueDate)
+      // Un mes recién generado ya es 'no_pagado' en base de datos desde el día 1, pero no
+      // corresponde contarlo como pendiente en el resumen del afiliado hasta que realmente
+      // entre en su ventana de cobro (sección "Al día"/"Pendiente"/"No pagado").
+      const displayStatus = getDisplayPaymentStatus(payment.status, dueDate, today())
+      if (displayStatus !== 'al_dia') {
+        summary.pendingCount += 1
+        summary.totalPending += payment.expectedAmount
+        const overdue = calculateDaysOverdue(dueDate, today())
+        if (overdue != null && (summary.maxOverdue == null || overdue > summary.maxOverdue)) summary.maxOverdue = overdue
+      }
     }
   }
 
