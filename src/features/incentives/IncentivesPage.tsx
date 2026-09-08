@@ -7,6 +7,7 @@ import { calculatePeriodForDate } from '@/domain'
 import { Card, CardBody } from '@/components/ui/Card'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
 import { formatCurrency, formatIncentiveTierValue, formatPoints } from '@/lib/format'
+import { today } from '@/lib/date'
 
 function Step({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -30,7 +31,7 @@ function Arrow() {
 
 export function IncentivesPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
-  const currentPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods)
+  const currentPeriod = calculatePeriodForDate(today(), periods)
   const { getForPeriod, loading: icvLoading } = useIcvRecords()
   const icvRecord = currentPeriod ? getForPeriod(currentPeriod.id) : null
   const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, icvRecord?.icvPercentage ?? null)

@@ -9,10 +9,11 @@ import { FormField, fieldClass } from '@/components/ui/FormField'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
 import { SwitchField } from '@/components/ui/Switch'
 import { formatPoints } from '@/lib/format'
+import { today } from '@/lib/date'
 
 export function IcvPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
-  const currentPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods)
+  const currentPeriod = calculatePeriodForDate(today(), periods)
   const { getForPeriod, setIcvForPeriod, loading: icvLoading } = useIcvRecords()
   const { profile, loading: profileLoading, setShowIcv } = useProfile()
 

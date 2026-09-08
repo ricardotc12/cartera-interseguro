@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { generateOwedMonths, defaultDueDateForMonth } from '@/domain'
+import { today } from '@/lib/date'
 import type { Affiliate, AffiliateStatus, Payment, PaymentStatus, Policy } from '@/types/domain'
 
 export interface PaymentWithContext extends Payment {
@@ -110,8 +111,6 @@ function mapPayment(row: PaymentRow): PaymentWithContext | null {
     affiliate: mapAffiliate(row.policies.affiliates),
   }
 }
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 export function usePayments() {
   const { user } = useAuth()

@@ -5,6 +5,7 @@ import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
 import { formatCurrency, formatIncentiveTierValue } from '@/lib/format'
+import { today } from '@/lib/date'
 
 function useSimulation(period: PeriodWithRules | undefined, affiliationsCount: string, avgAmount: string, collectionRatio: string, icvRatio: string) {
   return useMemo(() => {
@@ -33,7 +34,7 @@ function useSimulation(period: PeriodWithRules | undefined, affiliationsCount: s
 
 export function SimulatorPage() {
   const { periods, loading, error } = usePeriodsAdmin()
-  const defaultPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods) ?? periods[0]
+  const defaultPeriod = calculatePeriodForDate(today(), periods) ?? periods[0]
 
   const [periodId, setPeriodId] = useState<string | undefined>(undefined)
   const selectedPeriod = periods.find((p) => p.id === periodId) ?? defaultPeriod

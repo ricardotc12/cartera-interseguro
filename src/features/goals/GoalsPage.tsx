@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
 import { formatCurrency, formatPercentage, formatPoints } from '@/lib/format'
+import { today } from '@/lib/date'
 import type { GoalProgress } from '@/types/domain'
 
 function GoalCard({
@@ -39,7 +40,7 @@ function GoalCard({
 
 export function GoalsPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
-  const currentPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods)
+  const currentPeriod = calculatePeriodForDate(today(), periods)
   const { getForPeriod, loading: icvLoading } = useIcvRecords()
   const icvRecord = currentPeriod ? getForPeriod(currentPeriod.id) : null
   const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, icvRecord?.icvPercentage ?? null)

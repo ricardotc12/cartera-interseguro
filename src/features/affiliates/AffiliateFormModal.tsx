@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { isValidDni, isValidEmail, isValidAmount } from '@/lib/validators'
 import { formatUsdApprox } from '@/lib/format'
+import { today } from '@/lib/date'
 import { useUsdRate } from '@/hooks/useUsdRate'
 import type { AffiliateInput, AffiliateWithPolicies, PolicyInput } from '@/hooks/useAffiliates'
 import type { AffiliateStatus } from '@/types/domain'
@@ -23,8 +24,6 @@ interface AffiliateFormModalProps {
   onSubmitCreate?: (affiliate: AffiliateInput, policy: PolicyInput) => Promise<{ error: string | null }>
   onSubmitEdit?: (patch: Partial<AffiliateInput>) => Promise<{ error: string | null }>
 }
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, onSubmitEdit }: AffiliateFormModalProps) {
   const isEdit = !!affiliate

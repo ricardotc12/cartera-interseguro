@@ -4,8 +4,7 @@ import type { PaymentWithContext } from '@/hooks/usePayments'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
-
-const today = () => new Date().toISOString().slice(0, 10)
+import { today } from '@/lib/date'
 
 /** De todos los meses pendientes de una póliza, el que realmente corresponde cobrar ahora es el más antiguo (el resto son meses futuros que aún no vencen). */
 function oldestPendingPerPolicy(payments: PaymentWithContext[]): PaymentWithContext[] {

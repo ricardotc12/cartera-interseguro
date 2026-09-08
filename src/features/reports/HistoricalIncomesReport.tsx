@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
+import { today } from '@/lib/date'
 import type { HistoricalIncome } from '@/types/domain'
 
 const MANUAL_COLOR = '#94a3b8' // gris: mes registrado a mano
@@ -21,7 +22,7 @@ interface IncomeChartPoint {
   source: 'manual' | 'period'
 }
 
-const currentMonth = () => `${new Date().toISOString().slice(0, 7)}-01`
+const currentMonth = () => `${today().slice(0, 7)}-01`
 
 function toMonthInputValue(yearMonth: string): string {
   return yearMonth.slice(0, 7)

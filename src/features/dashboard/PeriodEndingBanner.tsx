@@ -3,14 +3,14 @@ import { CalendarClock } from 'lucide-react'
 import { Card, CardBody } from '@/components/ui/Card'
 import { calculateDaysUntil } from '@/domain'
 import { formatDate } from '@/lib/format'
+import { today } from '@/lib/date'
 import type { PeriodWithRules } from '@/hooks/usePeriodsAdmin'
 
 const WARNING_DAYS = 5
 
 /** Avisa con anticipación que el período activo está por terminar (sección 45), para no depender de que la asesora se acuerde sola. */
 export function PeriodEndingBanner({ currentPeriod }: { currentPeriod: PeriodWithRules }) {
-  const today = new Date().toISOString().slice(0, 10)
-  const daysLeft = calculateDaysUntil(currentPeriod.endDate, today)
+  const daysLeft = calculateDaysUntil(currentPeriod.endDate, today())
 
   if (currentPeriod.status !== 'active' || daysLeft > WARNING_DAYS || daysLeft < 0) return null
 

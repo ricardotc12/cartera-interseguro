@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
 import { formatCurrency, formatDate, formatIncentiveTierValue, formatPoints } from '@/lib/format'
+import { today } from '@/lib/date'
 import { PERIOD_STATUS_TONE, PERIOD_STATUS_LABEL } from '@/lib/periodStatus'
 import { IndicatorCard } from './IndicatorCard'
 import { PeriodsHistoryCharts } from './PeriodsHistoryCharts'
@@ -22,7 +23,7 @@ import { Skeleton, KpiGridSkeleton } from '@/components/ui/Skeleton'
 
 export function DashboardPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
-  const currentPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods)
+  const currentPeriod = calculatePeriodForDate(today(), periods)
   const { getForPeriod, loading: icvLoading } = useIcvRecords()
   const icvRecord = currentPeriod ? getForPeriod(currentPeriod.id) : null
   const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, icvRecord?.icvPercentage ?? null)

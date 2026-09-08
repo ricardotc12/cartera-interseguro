@@ -2,6 +2,7 @@ import { CheckCircle2, Pencil } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { PaymentStatusBadge } from './PaymentStatusBadge'
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/format'
+import { today } from '@/lib/date'
 import { calculateDaysOverdue, effectiveDueDate, getDisplayPaymentStatus } from '@/domain'
 import type { PaymentWithContext } from '@/hooks/usePayments'
 import type { Affiliate } from '@/types/domain'
@@ -17,8 +18,6 @@ interface PaymentHistoryModalProps {
   /** Abre el formulario completo para editar cualquier dato del mes (incluido uno ya pagado). */
   onEditPayment: (payment: PaymentWithContext) => void
 }
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 export function PaymentHistoryModal({ open, onClose, affiliate, payments, onRegisterPayment, onEditPayment }: PaymentHistoryModalProps) {
   const paidCount = payments.filter((p) => p.status === 'pagado').length

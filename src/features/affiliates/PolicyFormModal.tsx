@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { isValidAmount } from '@/lib/validators'
 import { formatUsdApprox } from '@/lib/format'
+import { today } from '@/lib/date'
 import { useUsdRate } from '@/hooks/useUsdRate'
 import type { PolicyInput } from '@/hooks/useAffiliates'
 import type { AffiliateStatus, Policy } from '@/types/domain'
@@ -21,8 +22,6 @@ interface PolicyFormModalProps {
   policy?: Policy
   onSubmit: (input: PolicyInput) => Promise<{ error: string | null }>
 }
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormModalProps) {
   const isEdit = !!policy

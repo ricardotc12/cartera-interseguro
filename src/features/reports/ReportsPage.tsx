@@ -10,6 +10,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { fieldClass } from '@/components/ui/FormField'
 import { downloadCsv } from '@/lib/csv'
 import { formatDate, formatIncentiveTierValue } from '@/lib/format'
+import { today } from '@/lib/date'
 import type { AffiliateStatus, PaymentStatus } from '@/types/domain'
 import { HistoricalIncomesReport } from './HistoricalIncomesReport'
 
@@ -21,8 +22,6 @@ const REPORT_TABS: { value: ReportTab; label: string }[] = [
   { value: 'periodos', label: 'Emisión Vida, Incentivos e ICV' },
   { value: 'historial', label: 'Historial de sueldos' },
 ]
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 export function ReportsPage() {
   const [tab, setTab] = useState<ReportTab>('afiliados')

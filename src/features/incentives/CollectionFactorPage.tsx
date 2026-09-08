@@ -8,10 +8,11 @@ import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { NoPeriodNotice } from '@/components/ui/NoPeriodNotice'
 import { SwitchField } from '@/components/ui/Switch'
 import { formatPoints } from '@/lib/format'
+import { today } from '@/lib/date'
 
 export function CollectionFactorPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
-  const currentPeriod = calculatePeriodForDate(new Date().toISOString().slice(0, 10), periods)
+  const currentPeriod = calculatePeriodForDate(today(), periods)
   const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, null)
   const { profile, loading: profileLoading, setShowCollectionRatio } = useProfile()
   const [toggleError, setToggleError] = useState<string | null>(null)

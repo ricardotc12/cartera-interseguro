@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { IncentivePeriod } from '@/types/domain'
 import { calculatePeriodForDate } from '@/domain'
+import { today } from '@/lib/date'
 
 function mapPeriod(row: {
   id: string
@@ -37,7 +38,7 @@ interface UsePeriodsResult {
 }
 
 /** Carga los períodos del usuario y resuelve cuál corresponde a la fecha de hoy (sección 10). */
-export function usePeriods(referenceDate: string = new Date().toISOString().slice(0, 10)): UsePeriodsResult {
+export function usePeriods(referenceDate: string = today()): UsePeriodsResult {
   const [periods, setPeriods] = useState<IncentivePeriod[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { fieldClass } from '@/components/ui/FormField'
 import { TableRowsSkeleton } from '@/components/ui/Skeleton'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
+import { today } from '@/lib/date'
 import { calculateDaysOverdue, effectiveDueDate } from '@/domain'
 import type { Affiliate, PaymentStatus } from '@/types/domain'
 import { PaymentFormModal } from './PaymentFormModal'
@@ -22,7 +23,6 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'no_corresponde', label: 'No corresponde' },
 ]
 
-const today = () => new Date().toISOString().slice(0, 10)
 const currentMonth = () => `${today().slice(0, 7)}-01`
 
 function matchesSearch(payment: PaymentWithContext, query: string): boolean {

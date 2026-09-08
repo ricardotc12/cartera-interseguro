@@ -4,11 +4,10 @@ import { Bell } from 'lucide-react'
 import { usePayments, type PaymentWithContext } from '@/hooks/usePayments'
 import { calculateDaysOverdue, effectiveDueDate, PENDING_WINDOW_DAYS } from '@/domain'
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/format'
+import { today } from '@/lib/date'
 
 /** Mismo horizonte que el estado "Pendiente" del pago: recién avisa "por vencer" desde un día antes del cobro. */
 const UPCOMING_WINDOW_DAYS = PENDING_WINDOW_DAYS
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 function daysUntilDue(dueDate: string, referenceDate: string): number {
   return Math.floor((new Date(dueDate).getTime() - new Date(referenceDate).getTime()) / 86_400_000)
