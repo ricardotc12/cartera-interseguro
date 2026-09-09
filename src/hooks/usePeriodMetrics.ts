@@ -8,7 +8,10 @@ import {
   calculateICVFactor,
   findIncentiveTier,
   calculateVidaEmission,
+  effectiveDueDate,
+  getDisplayPaymentStatus,
 } from '@/domain'
+import { today } from '@/lib/date'
 import type { IncentiveRule, PaymentStatus } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
 import { useProfile } from './useProfile'
@@ -59,7 +62,7 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
           .lte('start_date', period.endDate),
         supabase
           .from('payments')
-          .select('expected_amount, paid_amount, is_rescheduled, status')
+          .select('expected_amount, paid_amount, is_rescheduled, status, year_month, due_date')
           .gte('year_month', period.startDate)
           .lte('year_month', period.endDate),
       ])
@@ -84,6 +87,7 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
         paidAmount: p.paid_amount,
         isRescheduled: p.is_rescheduled,
         status: p.status as PaymentStatus,
+        dueDate: effectiveDueDate(p.year_month, p.due_date),
       }))
       const collectionRatio = calculateCollectionRatio(billablePayments)
       const collectionFactor = collectionRatio != null ? calculateCollectionFactor(collectionRatio, period.collectionFactorRules) : null
@@ -102,8 +106,18 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
           ? calculateFinalIncentive(baseIncentive, effectiveCollectionFactor, effectiveIcvFactor)
           : null
 
-      const paidPaymentsCount = billablePayments.filter((p) => p.status === 'pagado').length
-      const pendingPaymentsCount = billablePayments.filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar').length
+      // "Pagos pendientes" solo cuenta lo que de verdad necesita acción hoy (Pendiente o No
+      // pagado); un mes recién generado que aún no entra a su ventana de cobro (Al día) se
+      // cuenta junto a los pagados, porque no hay nada pendiente que hacer con él todavía.
+      const referenceDate = today()
+      const paidPaymentsCount = billablePayments.filter((p) => {
+        if (p.status === 'pagado') return true
+        return getDisplayPaymentStatus(p.status, p.dueDate, referenceDate) === 'al_dia'
+      }).length
+      const pendingPaymentsCount = billablePayments.filter((p) => {
+        if (p.status !== 'no_pagado' && p.status !== 'pendiente_confirmar') return false
+        return getDisplayPaymentStatus(p.status, p.dueDate, referenceDate) !== 'al_dia'
+      }).length
 
       setMetrics({
         totalAffiliationAmount,
