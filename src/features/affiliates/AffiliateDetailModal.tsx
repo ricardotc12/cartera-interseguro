@@ -139,12 +139,14 @@ export function AffiliateDetailModal({
         </div>
       </div>
 
-      <PolicyFormModal
-        open={policyModalOpen}
-        policy={editingPolicy}
-        onClose={() => setPolicyModalOpen(false)}
-        onSubmit={(input) => (editingPolicy ? onUpdatePolicy(editingPolicy.id, input) : onCreatePolicy(affiliate.id, input))}
-      />
+      {policyModalOpen && (
+        <PolicyFormModal
+          open={policyModalOpen}
+          policy={editingPolicy}
+          onClose={() => setPolicyModalOpen(false)}
+          onSubmit={(input) => (editingPolicy ? onUpdatePolicy(editingPolicy.id, input) : onCreatePolicy(affiliate.id, input))}
+        />
+      )}
 
       {deletingPolicy && (
         <ConfirmDialog

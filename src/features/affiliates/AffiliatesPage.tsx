@@ -225,7 +225,9 @@ export function AffiliatesPage() {
         </>
       )}
 
-      <AffiliateFormModal open={createOpen} onClose={() => setCreateOpen(false)} onSubmitCreate={createAffiliateWithPolicy} />
+      {createOpen && (
+        <AffiliateFormModal open={createOpen} onClose={() => setCreateOpen(false)} onSubmitCreate={createAffiliateWithPolicy} />
+      )}
 
       {editing && (
         <AffiliateFormModal

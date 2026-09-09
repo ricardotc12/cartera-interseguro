@@ -100,7 +100,13 @@ export function CollectionPage() {
     () =>
       payments.filter((p) => {
         if (monthFilter !== 'todos' && p.yearMonth !== monthFilter) return false
-        if (statusFilter === 'pendientes' && !['no_pagado', 'pendiente_confirmar'].includes(p.status)) return false
+        if (statusFilter === 'pendientes') {
+          if (!['no_pagado', 'pendiente_confirmar'].includes(p.status)) return false
+          // No mostrar en "Pendientes" un mes que todavía está Al día — recién cuenta
+          // como pendiente cuando entra a su ventana de cobro.
+          const dueDate = effectiveDueDate(p.yearMonth, p.dueDate)
+          if (getDisplayPaymentStatus(p.status, dueDate, today()) === 'al_dia') return false
+        }
         if (statusFilter !== 'pendientes' && statusFilter !== 'todos' && p.status !== statusFilter) return false
         return matchesSearch(p, search)
       }),
