@@ -60,11 +60,12 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
           .select('affiliate_id, affiliation_amount')
           .gte('start_date', period.startDate)
           .lte('start_date', period.endDate),
-        supabase
-          .from('payments')
-          .select('expected_amount, paid_amount, is_rescheduled, status, year_month, due_date')
-          .gte('year_month', period.startDate)
-          .lte('year_month', period.endDate),
+        // No se filtra por year_month en la consulta: year_month siempre es el día 1 del
+        // mes de cobranza, pero el período corre del 16 al 15 — comparar esa fecha
+        // truncada contra el rango del período dejaba fuera el mes que sí corresponde
+        // (su cobro real es el 20) y de rebote incluía el mes siguiente, que aún no
+        // vence. Se filtra abajo por la fecha de vencimiento real de cada pago.
+        supabase.from('payments').select('expected_amount, paid_amount, is_rescheduled, status, year_month, due_date'),
       ])
 
       if (cancelled) return
@@ -82,13 +83,15 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
       const incentiveTier = findIncentiveTier(vidaEmission, period.incentiveRules)
       const baseIncentive = incentiveTier != null ? calculateBaseIncentive(vidaEmission, incentiveTier) : null
 
-      const billablePayments = (paymentsResult.data ?? []).map((p) => ({
-        expectedAmount: p.expected_amount,
-        paidAmount: p.paid_amount,
-        isRescheduled: p.is_rescheduled,
-        status: p.status as PaymentStatus,
-        dueDate: effectiveDueDate(p.year_month, p.due_date),
-      }))
+      const billablePayments = (paymentsResult.data ?? [])
+        .map((p) => ({
+          expectedAmount: p.expected_amount,
+          paidAmount: p.paid_amount,
+          isRescheduled: p.is_rescheduled,
+          status: p.status as PaymentStatus,
+          dueDate: effectiveDueDate(p.year_month, p.due_date),
+        }))
+        .filter((p) => p.dueDate >= period.startDate && p.dueDate <= period.endDate)
       const collectionRatio = calculateCollectionRatio(billablePayments)
       const collectionFactor = collectionRatio != null ? calculateCollectionFactor(collectionRatio, period.collectionFactorRules) : null
 

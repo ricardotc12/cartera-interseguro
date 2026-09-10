@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { calculateCollectionRatio, calculateVidaEmission } from '@/domain'
+import { calculateCollectionRatio, calculateVidaEmission, effectiveDueDate } from '@/domain'
 import type { PaymentStatus } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
 
@@ -37,7 +37,7 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
       setLoading(true)
       const [policiesResult, paymentsResult] = await Promise.all([
         supabase.from('policies').select('affiliation_amount, start_date'),
-        supabase.from('payments').select('year_month, expected_amount, paid_amount, is_rescheduled, status'),
+        supabase.from('payments').select('year_month, due_date, expected_amount, paid_amount, is_rescheduled, status'),
       ])
 
       if (cancelled) return
@@ -57,8 +57,15 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
           const totalAffiliationAmount = periodPolicies.reduce((sum, p) => sum + p.affiliation_amount, 0)
           const vidaEmission = calculateVidaEmission(totalAffiliationAmount, period.vidaEmissionMultiplier)
 
+          // year_month siempre es el día 1 del mes de cobranza, pero el período corre del
+          // 16 al 15 — hay que comparar contra la fecha de vencimiento real (el 20), no
+          // contra esa fecha truncada, o el mes que corresponde queda fuera y entra el
+          // siguiente por error (mismo bug que en usePeriodMetrics).
           const periodPayments = payments
-            .filter((p) => p.year_month >= period.startDate && p.year_month <= period.endDate)
+            .filter((p) => {
+              const dueDate = effectiveDueDate(p.year_month, p.due_date)
+              return dueDate >= period.startDate && dueDate <= period.endDate
+            })
             .map((p) => ({
               expectedAmount: p.expected_amount,
               paidAmount: p.paid_amount,
