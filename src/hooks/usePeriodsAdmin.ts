@@ -294,6 +294,21 @@ export function usePeriodsAdmin() {
 
   async function setPeriodStatus(id: string, status: PeriodStatus) {
     if (!user) return { error: 'Debes iniciar sesión.' }
+
+    // Al activar un período, cierra en el mismo paso cualquier otro que haya quedado
+    // "Activo" — solo hay un período vigente a la vez, así que no debe depender de que
+    // la asesora recuerde cerrar el anterior por separado.
+    if (status === 'active') {
+      const othersActive = periods.filter((p) => p.id !== id && p.status === 'active').map((p) => p.id)
+      if (othersActive.length > 0) {
+        const { error: closeError } = await supabase
+          .from('incentive_periods')
+          .update({ status: 'closed', updated_by: user.id })
+          .in('id', othersActive)
+        if (closeError) return { error: friendlyError(closeError) }
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('incentive_periods')
       .update({ status, updated_by: user.id })

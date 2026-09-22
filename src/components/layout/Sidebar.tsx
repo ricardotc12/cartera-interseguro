@@ -12,7 +12,7 @@ export function Sidebar() {
   const [changingPassword, setChangingPassword] = useState(false)
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-secondary-100/60 md:flex">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-secondary-100/60 md:sticky md:top-0 md:flex md:h-screen">
       <div className="flex h-16 items-center bg-primary-700 px-5">
         <BrandLogo variant="full" />
       </div>
