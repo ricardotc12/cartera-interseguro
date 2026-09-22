@@ -1,24 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell } from 'lucide-react'
-import { usePayments, type PaymentWithContext } from '@/hooks/usePayments'
-import { calculateDaysOverdue, effectiveDueDate, PENDING_WINDOW_DAYS } from '@/domain'
+import { useCollectionAlerts, type CollectionAlert } from '@/hooks/useCollectionAlerts'
+import { calculateDaysOverdue } from '@/domain'
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/format'
 import { today } from '@/lib/date'
 
-/** Mismo horizonte que el estado "Pendiente" del pago: recién avisa "por vencer" desde un día antes del cobro. */
-const UPCOMING_WINDOW_DAYS = PENDING_WINDOW_DAYS
-
-function daysUntilDue(dueDate: string, referenceDate: string): number {
-  return Math.floor((new Date(dueDate).getTime() - new Date(referenceDate).getTime()) / 86_400_000)
-}
-
-interface UnpaidAlert {
-  payment: PaymentWithContext
-  dueDate: string
-}
-
-function AlertRow({ payment, tone, text }: { payment: PaymentWithContext; tone: 'danger' | 'warning'; text: string }) {
+function AlertRow({ payment, tone, text }: { payment: CollectionAlert['payment']; tone: 'danger' | 'warning'; text: string }) {
   return (
     <li>
       <Link to="/cobranza" className="block rounded-lg px-3 py-2 hover:bg-slate-50">
@@ -34,7 +22,7 @@ function AlertRow({ payment, tone, text }: { payment: PaymentWithContext; tone: 
 }
 
 export function NotificationsBell() {
-  const { payments, loading } = usePayments()
+  const { overdue, upcoming, total, loading, daysUntilDue } = useCollectionAlerts()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -48,20 +36,6 @@ export function NotificationsBell() {
   }, [open])
 
   if (loading) return null
-
-  const unpaid: UnpaidAlert[] = payments
-    .filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar')
-    .map((p) => ({ payment: p, dueDate: effectiveDueDate(p.yearMonth, p.dueDate) }))
-
-  const overdue = unpaid
-    .filter(({ dueDate }) => calculateDaysOverdue(dueDate, today()) != null)
-    .sort((a, b) => (calculateDaysOverdue(b.dueDate, today()) ?? 0) - (calculateDaysOverdue(a.dueDate, today()) ?? 0))
-
-  const upcoming = unpaid
-    .filter(({ dueDate }) => calculateDaysOverdue(dueDate, today()) == null && daysUntilDue(dueDate, today()) <= UPCOMING_WINDOW_DAYS)
-    .sort((a, b) => daysUntilDue(a.dueDate, today()) - daysUntilDue(b.dueDate, today()))
-
-  const total = overdue.length + upcoming.length
 
   return (
     <div className="relative" ref={containerRef}>

@@ -6,7 +6,7 @@ import { usePeriodsHistory } from '@/hooks/usePeriodsHistory'
 import { useAffiliates } from '@/hooks/useAffiliates'
 import { usePayments } from '@/hooks/usePayments'
 import { useProfile } from '@/hooks/useProfile'
-import { calculatePeriodForDate, calculateGoalProgress } from '@/domain'
+import { calculatePeriodForDate, calculateGoalProgress, calculateDaysUntil } from '@/domain'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -17,7 +17,8 @@ import { PERIOD_STATUS_TONE, PERIOD_STATUS_LABEL } from '@/lib/periodStatus'
 import { IndicatorCard } from './IndicatorCard'
 import { PeriodsHistoryCharts } from './PeriodsHistoryCharts'
 import { PendingPaymentsList } from './PendingPaymentsList'
-import { PeriodEndingBanner } from './PeriodEndingBanner'
+import { PeriodEndingBanner, PERIOD_ENDING_WARNING_DAYS } from './PeriodEndingBanner'
+import { CollectionAlertsModal } from './CollectionAlertsModal'
 import { WelcomeBanner } from './WelcomeBanner'
 import { Skeleton, KpiGridSkeleton } from '@/components/ui/Skeleton'
 
@@ -61,11 +62,14 @@ export function DashboardPage() {
 
   const activeAffiliates = affiliates.filter((a) => a.status === 'activo').length
   const goalProgress = calculateGoalProgress(currentPeriod.vidaEmissionGoal, metrics.vidaEmission)
+  const periodDaysLeft = calculateDaysUntil(currentPeriod.endDate, today())
+  const periodEndingSoon = periodDaysLeft >= 0 && periodDaysLeft <= PERIOD_ENDING_WARNING_DAYS
 
   return (
     <div className="space-y-4">
       <WelcomeBanner />
       <PeriodEndingBanner currentPeriod={currentPeriod} />
+      <CollectionAlertsModal suppressed={periodEndingSoon} />
 
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-primary-700 to-primary-600 px-4 py-4 text-white sm:px-5">

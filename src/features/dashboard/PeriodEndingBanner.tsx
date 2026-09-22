@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/format'
 import { today } from '@/lib/date'
 import type { PeriodWithRules } from '@/hooks/usePeriodsAdmin'
 
-const WARNING_DAYS = 5
+export const PERIOD_ENDING_WARNING_DAYS = 5
 
 /**
  * Avisa con anticipación que el período vigente está por terminar (sección 45), para no
@@ -19,7 +19,7 @@ const WARNING_DAYS = 5
  */
 export function PeriodEndingBanner({ currentPeriod }: { currentPeriod: PeriodWithRules }) {
   const daysLeft = calculateDaysUntil(currentPeriod.endDate, today())
-  const shouldWarn = daysLeft >= 0 && daysLeft <= WARNING_DAYS
+  const shouldWarn = daysLeft >= 0 && daysLeft <= PERIOD_ENDING_WARNING_DAYS
   const [dismissed, setDismissed] = useState(false)
 
   if (!shouldWarn || dismissed) return null
