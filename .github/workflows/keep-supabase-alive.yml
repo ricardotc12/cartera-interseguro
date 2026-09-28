@@ -1,0 +1,25 @@
+# =========================================================================
+# Ping automático a Supabase cada 3 días para que el proyecto gratuito
+# NUNCA se pause por inactividad (Supabase pausa tras 7 días sin
+# requests). No usa credenciales secretas — la anon key ya está embebida
+# en el bundle público de la app (protegida por RLS), así que es segura
+# de tener aquí.
+# =========================================================================
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Cada 3er dia del mes (margen amplio bajo el limite de 7 dias)
+    - cron: '0 9 */3 * *'
+  workflow_dispatch: # permite correrlo manualmente desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -sf "https://twfczfoirizrthhlevew.supabase.co/rest/v1/incentive_periods?select=id&limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3ZmN6Zm9pcml6cnRoaGxldmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NTQwNjMsImV4cCI6MjEwNDEzMDA2M30.M5GZx01aIHAR9clUyRSaHRXquzVZRtyNtYRNrb6DPY4" \
+            -o /dev/null
+          echo "Ping enviado correctamente — proyecto sigue activo"
