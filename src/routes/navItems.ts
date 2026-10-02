@@ -9,6 +9,7 @@ import {
   Calculator,
   FileBarChart,
   Settings,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -29,6 +30,7 @@ export const navItems: NavItem[] = [
   { to: '/factor-cobranza', label: 'Factor Cobranza', icon: Percent },
   { to: '/icv', label: 'ICV', icon: Gauge },
   { to: '/simulador', label: 'Simulador', icon: Calculator },
+  { to: '/cotizador', label: 'Cotizador', icon: ClipboardList },
   { to: '/reportes', label: 'Reportes', icon: FileBarChart },
   { to: '/configuracion/periodos', label: 'Configuración', icon: Settings },
 ]

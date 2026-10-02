@@ -133,6 +133,26 @@ type HistoricalIncomeRow = {
   updated_by: string | null
 }
 
+type QuoteRateRow = {
+  id: string
+  age_min: number
+  age_max: number
+  product: string
+  plan: string
+  protection_type: 'basica' | 'invalidez' | 'integral'
+  coverage_years: number
+  prima_mensual: number | null
+  prima_anual: number | null
+  monto_asegurado: number | null
+  pct_devolucion: number | null
+  total_devolucion: number | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+  updated_by: string | null
+}
+
 type AuditLogRow = {
   id: string
   table_name: string
@@ -245,6 +265,12 @@ export interface Database {
         Row: HistoricalIncomeRow
         Insert: WritableInsert<HistoricalIncomeRow, 'id' | 'created_at' | 'updated_at' | 'updated_by'>
         Update: WritableUpdate<HistoricalIncomeRow, 'id' | 'created_at' | 'updated_at'>
+        Relationships: []
+      }
+      quote_rates: {
+        Row: QuoteRateRow
+        Insert: WritableInsert<QuoteRateRow, 'id' | 'created_at' | 'updated_at' | 'updated_by'>
+        Update: WritableUpdate<QuoteRateRow, 'id' | 'created_at' | 'updated_at'>
         Relationships: []
       }
       audit_log: {

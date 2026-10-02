@@ -13,3 +13,7 @@ export {
   PENDING_WINDOW_DAYS,
 } from './payments'
 export { findRangeMatch, findNextTier } from './rangeRules'
+export { PROTECTION_TYPES, AGE_BANDS, DEFAULT_COVERAGE_PERIODS, findAgeBand, findProtectionType } from './quoteCoverage'
+export type { CoverageFlags, ProtectionTypeDef, AgeBand } from './quoteCoverage'
+export { findQuoteRate } from './quoteRates'
+export type { QuoteFilters } from './quoteRates'

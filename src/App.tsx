@@ -14,6 +14,7 @@ const CollectionFactorPage = lazy(() =>
 )
 const IcvPage = lazy(() => import('@/features/icv/IcvPage').then((m) => ({ default: m.IcvPage })))
 const SimulatorPage = lazy(() => import('@/features/simulator/SimulatorPage').then((m) => ({ default: m.SimulatorPage })))
+const QuotesPage = lazy(() => import('@/features/quotes/QuotesPage').then((m) => ({ default: m.QuotesPage })))
 const ReportsPage = lazy(() => import('@/features/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const PeriodsSettingsPage = lazy(() =>
   import('@/features/settings/periods/PeriodsSettingsPage').then((m) => ({ default: m.PeriodsSettingsPage })),
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/factor-cobranza" element={<ProtectedRoute><CollectionFactorPage /></ProtectedRoute>} />
           <Route path="/icv" element={<ProtectedRoute><IcvPage /></ProtectedRoute>} />
           <Route path="/simulador" element={<ProtectedRoute><SimulatorPage /></ProtectedRoute>} />
+          <Route path="/cotizador" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
           <Route path="/reportes" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
           <Route path="/configuracion/periodos" element={<ProtectedRoute><PeriodsSettingsPage /></ProtectedRoute>} />
         </Routes>

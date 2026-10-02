@@ -109,3 +109,28 @@ export interface GoalProgress {
   compliancePct: number // actual / goal, e.g. 1.0715 = 107.15%
   remaining: number // max(goal - actual, 0)
 }
+
+export type ProtectionType = 'basica' | 'invalidez' | 'integral'
+
+/**
+ * Tarifa de referencia del cotizador preliminar (herramienta aparte, para orientar a un
+ * cliente antes de la cotización oficial — no participa en ningún cálculo de incentivo).
+ * ageMin/ageMax: un rango (ej. 30-35) o una edad exacta cuando ageMin === ageMax, para
+ * poder registrar un valor distinto para una edad puntual dentro de un rango más amplio.
+ * Los montos quedan en null cuando todavía no se ha ingresado el valor real ("Por definir").
+ */
+export interface QuoteRate {
+  id: string
+  ageMin: number
+  ageMax: number
+  product: string
+  plan: string
+  protectionType: ProtectionType
+  coverageYears: number
+  primaMensual: number | null
+  primaAnual: number | null
+  montoAsegurado: number | null
+  pctDevolucion: number | null
+  totalDevolucion: number | null
+  notes: string | null
+}
