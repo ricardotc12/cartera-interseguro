@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { AppShell } from '@/components/layout/AppShell'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, loading, recoveryPending } = useAuth()
 
   if (loading) {
     return (
@@ -13,6 +13,10 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) return <Navigate to="/login" replace />
+
+  // Hay una sesión (la que deja el enlace de "olvidé mi contraseña"), pero todavía no se
+  // guardó la contraseña nueva: no se deja entrar al resto de la app hasta completarlo.
+  if (recoveryPending) return <Navigate to="/restablecer-password" replace />
 
   return <AppShell>{children}</AppShell>
 }

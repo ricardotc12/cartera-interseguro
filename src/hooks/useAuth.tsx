@@ -6,6 +6,8 @@ interface AuthContextValue {
   user: User | null
   session: Session | null
   loading: boolean
+  /** true desde que se abre el enlace de "olvidé mi contraseña" hasta que se guarda la contraseña nueva: aunque ya exista una sesión válida, no debe dejar entrar al resto de la app todavía. */
+  recoveryPending: boolean
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
@@ -14,9 +16,22 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+const RECOVERY_PENDING_KEY = 'auth_recovery_pending'
+
+function readRecoveryPending(): boolean {
+  return localStorage.getItem(RECOVERY_PENDING_KEY) === 'true'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recoveryPending, setRecoveryPendingState] = useState(readRecoveryPending)
+
+  function setRecoveryPending(value: boolean) {
+    if (value) localStorage.setItem(RECOVERY_PENDING_KEY, 'true')
+    else localStorage.removeItem(RECOVERY_PENDING_KEY)
+    setRecoveryPendingState(value)
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -24,8 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
+      // Supabase ya deja una sesión válida apenas se abre el enlace del correo, antes de que
+      // se guarde la contraseña nueva — sin esta marca, ProtectedRoute dejaría entrar al resto
+      // de la app con esa sesión temporal sin haber cambiado nada.
+      if (event === 'PASSWORD_RECOVERY') setRecoveryPending(true)
     })
 
     return () => subscription.subscription.unsubscribe()
@@ -38,10 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
+    setRecoveryPending(false)
   }
 
   async function updatePassword(newPassword: string) {
     const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (!error) setRecoveryPending(false)
     return { error: error?.message ?? null }
   }
 
@@ -55,7 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user: session?.user ?? null, session, loading, signInWithPassword, signOut, updatePassword, resetPasswordForEmail }}
+      value={{
+        user: session?.user ?? null,
+        session,
+        loading,
+        recoveryPending,
+        signInWithPassword,
+        signOut,
+        updatePassword,
+        resetPasswordForEmail,
+      }}
     >
       {children}
     </AuthContext.Provider>

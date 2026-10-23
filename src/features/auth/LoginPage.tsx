@@ -6,14 +6,14 @@ import { BrandLogo } from '@/components/layout/BrandLogo'
 import { ForgotPasswordForm } from './ForgotPasswordForm'
 
 export function LoginPage() {
-  const { user, signInWithPassword, loading } = useAuth()
+  const { user, signInWithPassword, loading, recoveryPending } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
 
-  if (!loading && user) return <Navigate to="/" replace />
+  if (!loading && user) return <Navigate to={recoveryPending ? '/restablecer-password' : '/'} replace />
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
