@@ -134,3 +134,19 @@ export interface QuoteRate {
   totalDevolucion: number | null
   notes: string | null
 }
+
+/**
+ * Registro de seguimiento comercial: una persona contactada que todavía no es afiliada
+ * (prospección). `status` es texto libre a propósito — la asesora define y amplía sus
+ * propias etapas (contactado, se envió cotización, no quiso la póliza, etc.) desde la
+ * propia pantalla, sin depender de una migración para agregar una opción nueva.
+ */
+export interface Contact {
+  id: string
+  fullName: string
+  phone: string | null
+  dni: string | null
+  status: string
+  contactDate: string
+  notes: string | null
+}

@@ -153,6 +153,20 @@ type QuoteRateRow = {
   updated_by: string | null
 }
 
+type ContactRow = {
+  id: string
+  full_name: string
+  phone: string | null
+  dni: string | null
+  status: string
+  contact_date: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+  updated_by: string | null
+}
+
 type AuditLogRow = {
   id: string
   table_name: string
@@ -271,6 +285,12 @@ export interface Database {
         Row: QuoteRateRow
         Insert: WritableInsert<QuoteRateRow, 'id' | 'created_at' | 'updated_at' | 'updated_by'>
         Update: WritableUpdate<QuoteRateRow, 'id' | 'created_at' | 'updated_at'>
+        Relationships: []
+      }
+      contacts: {
+        Row: ContactRow
+        Insert: WritableInsert<ContactRow, 'id' | 'created_at' | 'updated_at' | 'updated_by'>
+        Update: WritableUpdate<ContactRow, 'id' | 'created_at' | 'updated_at'>
         Relationships: []
       }
       audit_log: {

@@ -6,6 +6,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const AffiliatesPage = lazy(() => import('@/features/affiliates/AffiliatesPage').then((m) => ({ default: m.AffiliatesPage })))
+const ContactsPage = lazy(() => import('@/features/contacts/ContactsPage').then((m) => ({ default: m.ContactsPage })))
 const CollectionPage = lazy(() => import('@/features/collection/CollectionPage').then((m) => ({ default: m.CollectionPage })))
 const GoalsPage = lazy(() => import('@/features/goals/GoalsPage').then((m) => ({ default: m.GoalsPage })))
 const IncentivesPage = lazy(() => import('@/features/incentives/IncentivesPage').then((m) => ({ default: m.IncentivesPage })))
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/afiliados" element={<ProtectedRoute><AffiliatesPage /></ProtectedRoute>} />
+          <Route path="/contactos" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
           <Route path="/cobranza" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
           <Route path="/metas" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
           <Route path="/incentivos" element={<ProtectedRoute><IncentivesPage /></ProtectedRoute>} />

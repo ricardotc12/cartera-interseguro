@@ -10,6 +10,7 @@ import {
   FileBarChart,
   Settings,
   ClipboardList,
+  UserCheck,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -24,6 +25,7 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, primaryMobile: true },
   { to: '/afiliados', label: 'Afiliados', icon: Users, primaryMobile: true },
+  { to: '/contactos', label: 'Contactos', icon: UserCheck },
   { to: '/cobranza', label: 'Cobranza', icon: Wallet, primaryMobile: true },
   { to: '/metas', label: 'Metas', icon: Target },
   { to: '/incentivos', label: 'Ingresos / Incentivos', icon: TrendingUp },
