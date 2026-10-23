@@ -8,9 +8,9 @@ import type { Contact } from '@/types/domain'
 import type { ContactInput } from '@/hooks/useContacts'
 
 /**
- * Sugerencias iniciales de etapa de seguimiento — no son un valor fijo: el campo es texto
- * libre (datalist), así que la asesora puede escribir cualquier otra etapa que necesite y
- * queda disponible como sugerencia la próxima vez, sin depender de una migración.
+ * Sugerencias iniciales de etapa de seguimiento — no son un valor fijo: la asesora puede
+ * agregar cualquier otra etapa que necesite desde el propio desplegable ("+ Agregar nuevo
+ * estado…") y queda disponible para elegir la próxima vez, sin depender de una migración.
  */
 export const SUGGESTED_STATUSES = [
   'Contactado',
@@ -21,6 +21,8 @@ export const SUGGESTED_STATUSES = [
   'Pendiente de seguimiento',
   'Convertido a afiliado',
 ]
+
+const ADD_NEW_STATUS_VALUE = '__add_new__'
 
 interface ContactFormModalProps {
   open: boolean
@@ -36,7 +38,8 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
   const [fullName, setFullName] = useState(contact?.fullName ?? '')
   const [phone, setPhone] = useState(contact?.phone ?? '')
   const [dni, setDni] = useState(contact?.dni ?? '')
-  const [status, setStatus] = useState(contact?.status ?? SUGGESTED_STATUSES[0]!)
+  const [status, setStatus] = useState(contact?.status ?? '')
+  const [addingNewStatus, setAddingNewStatus] = useState(false)
   const [contactDate, setContactDate] = useState(contact?.contactDate ?? today())
   const [notes, setNotes] = useState(contact?.notes ?? '')
 
@@ -77,7 +80,20 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
     onClose()
   }
 
-  const statusOptions = Array.from(new Set([...SUGGESTED_STATUSES, ...statusSuggestions]))
+  // Incluye siempre el estado actual del contacto, aunque ya no esté entre las sugerencias
+  // (ej. si fue el único registro con esa etapa y luego se borró), para no perderlo del
+  // desplegable al editar.
+  const statusOptions = Array.from(new Set([...SUGGESTED_STATUSES, ...statusSuggestions, ...(contact ? [contact.status] : [])]))
+
+  function handleStatusChange(value: string) {
+    if (value === ADD_NEW_STATUS_VALUE) {
+      setAddingNewStatus(true)
+      setStatus('')
+      return
+    }
+    setAddingNewStatus(false)
+    setStatus(value)
+  }
 
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'Editar contacto' : 'Nuevo contacto'}>
@@ -108,19 +124,38 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Estado del seguimiento" htmlFor="status" error={fieldErrors.status} hint="Elige uno o escribe el tuyo">
-            <input
-              id="status"
-              list="contact-status-options"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className={fieldClass(!!fieldErrors.status)}
-            />
-            <datalist id="contact-status-options">
-              {statusOptions.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
+          <FormField label="Estado del seguimiento" htmlFor="status" error={fieldErrors.status}>
+            {addingNewStatus ? (
+              <div className="flex gap-2">
+                <input
+                  id="status"
+                  autoFocus
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  placeholder="Escribe el nuevo estado"
+                  className={fieldClass(!!fieldErrors.status)}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange(statusOptions[0] ?? '')}
+                  className="shrink-0 rounded-lg border border-slate-300 px-3 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <select id="status" value={status} onChange={(e) => handleStatusChange(e.target.value)} className={fieldClass(!!fieldErrors.status)}>
+                <option value="" disabled>
+                  Selecciona un estado
+                </option>
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+                <option value={ADD_NEW_STATUS_VALUE}>+ Agregar nuevo estado…</option>
+              </select>
+            )}
           </FormField>
           <FormField label="Fecha de contacto" htmlFor="contactDate" error={fieldErrors.contactDate}>
             <input
