@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const AffiliatesPage = lazy(() => import('@/features/affiliates/AffiliatesPage').then((m) => ({ default: m.AffiliatesPage })))
@@ -31,6 +32,7 @@ export default function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/restablecer-password" element={<ResetPasswordPage />} />
           <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/afiliados" element={<ProtectedRoute><AffiliatesPage /></ProtectedRoute>} />
           <Route path="/contactos" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
