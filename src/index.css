@@ -29,6 +29,17 @@ body,
   height: 100%;
 }
 
+/*
+ * Sin esto, iOS deja "rebotar" la página (el clásico efecto elástico de Safari/PWA) al
+ * arrastrar cerca de los bordes o sobre una tabla con scroll horizontal: eso es lo que se
+ * veía como la app "moviéndose de un lado a otro" y como un destello del fondo claro detrás
+ * del header al rebotar hacia arriba. Esto lo bloquea a nivel de página completa.
+ */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-text);

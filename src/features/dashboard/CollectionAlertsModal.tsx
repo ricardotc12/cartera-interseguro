@@ -38,7 +38,7 @@ export function CollectionAlertsModal({ suppressed }: { suppressed: boolean }) {
   if (loading || suppressed || total === 0 || dismissed) return null
 
   return (
-    <Modal open onClose={() => setDismissed(true)} title="Alertas de cobranza">
+    <Modal open onClose={() => setDismissed(true)} title="Alertas de cobranza" size="alert">
       <div className="space-y-4">
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />

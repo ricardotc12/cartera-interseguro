@@ -29,6 +29,7 @@ export function PeriodEndingBanner({ currentPeriod }: { currentPeriod: PeriodWit
       open
       onClose={() => setDismissed(true)}
       title={daysLeft === 0 ? 'Tu período termina hoy' : 'Tu período está por terminar'}
+      size="alert"
     >
       <div className="space-y-4">
         <div className="flex items-start gap-3">
