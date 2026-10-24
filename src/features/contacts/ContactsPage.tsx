@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Download, Phone, MessageCircle } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Download, Phone, MessageCircle, Mail } from 'lucide-react'
 import { useContacts } from '@/hooks/useContacts'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -17,6 +17,45 @@ function matchesSearch(contact: Contact, query: string): boolean {
   if (!query) return true
   const haystack = `${contact.fullName} ${contact.dni ?? ''} ${contact.phone ?? ''}`.toLowerCase()
   return haystack.includes(query.toLowerCase())
+}
+
+/** Enlace de Gmail (no mailto:) para que siempre abra Gmail a redactar, en vez del cliente de correo que tenga el teléfono/navegador por defecto. */
+function gmailComposeUrl(email: string): string {
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`
+}
+
+function ContactActions({ contact }: { contact: Contact }) {
+  return (
+    <>
+      {contact.phone && (
+        <>
+          <a href={`tel:${contact.phone}`} className="rounded p-1.5 text-blue-500 hover:bg-blue-50" title="Llamar" aria-label="Llamar">
+            <Phone className="h-4 w-4" />
+          </a>
+          <a
+            href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded p-1.5 text-emerald-500 hover:bg-emerald-50"
+            title="WhatsApp" aria-label="WhatsApp"
+          >
+            <MessageCircle className="h-4 w-4" />
+          </a>
+        </>
+      )}
+      {contact.email && (
+        <a
+          href={gmailComposeUrl(contact.email)}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded p-1.5 text-red-500 hover:bg-red-50"
+          title="Enviar correo (Gmail)" aria-label="Enviar correo (Gmail)"
+        >
+          <Mail className="h-4 w-4" />
+        </a>
+      )}
+    </>
+  )
 }
 
 export function ContactsPage() {
@@ -42,8 +81,10 @@ export function ContactsPage() {
         Nombre: c.fullName,
         DNI: c.dni ?? '',
         Celular: c.phone ?? '',
+        Correo: c.email ?? '',
         Estado: c.status,
         'Fecha de contacto': c.contactDate,
+        'Volver a contactar': c.nextContactDate ?? '',
         Observaciones: c.notes ?? '',
       })),
     )
@@ -133,29 +174,15 @@ export function ContactsPage() {
                         {contact.status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{formatDate(contact.contactDate)}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {formatDate(contact.contactDate)}
+                      {contact.nextContactDate && (
+                        <div className="text-xs font-normal text-amber-600">Recontactar: {formatDate(contact.nextContactDate)}</div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
-                        {contact.phone && (
-                          <>
-                            <a
-                              href={`tel:${contact.phone}`}
-                              className="rounded p-1.5 text-blue-500 hover:bg-blue-50"
-                              title="Llamar" aria-label="Llamar"
-                            >
-                              <Phone className="h-4 w-4" />
-                            </a>
-                            <a
-                              href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded p-1.5 text-emerald-500 hover:bg-emerald-50"
-                              title="WhatsApp" aria-label="WhatsApp"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                            </a>
-                          </>
-                        )}
+                        <ContactActions contact={contact} />
                         <button
                           onClick={() => setEditing(contact)}
                           className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
@@ -193,24 +220,12 @@ export function ContactsPage() {
                     </Badge>
                   </div>
                   <p className="mt-2 text-xs text-slate-500">Contactado el {formatDate(contact.contactDate)}</p>
+                  {contact.nextContactDate && (
+                    <p className="text-xs font-medium text-amber-600">Recontactar: {formatDate(contact.nextContactDate)}</p>
+                  )}
                   <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
                     <div className="flex gap-1">
-                      {contact.phone && (
-                        <>
-                          <a href={`tel:${contact.phone}`} className="rounded p-2 text-blue-500 hover:bg-blue-50" title="Llamar" aria-label="Llamar">
-                            <Phone className="h-4 w-4" />
-                          </a>
-                          <a
-                            href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded p-2 text-emerald-500 hover:bg-emerald-50"
-                            title="WhatsApp" aria-label="WhatsApp"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                          </a>
-                        </>
-                      )}
+                      <ContactActions contact={contact} />
                     </div>
                     <div className="flex gap-1">
                       <button onClick={() => setEditing(contact)} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" aria-label="Editar">

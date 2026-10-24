@@ -26,6 +26,18 @@ export function Modal({ open, onClose, title, children, size = 'sheet' }: ModalP
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
 
+  // Con el fondo todavía desplazable detrás del modal, arrastrar sobre la parte oscurecida
+  // seguía moviendo la pantalla (la lista de atrás se ve correr debajo). Mientras el modal
+  // esté abierto, el fondo queda fijo — solo se mueve el contenido del propio modal.
+  useEffect(() => {
+    if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
+
   if (!open) return null
 
   const isAlert = size === 'alert'
@@ -33,7 +45,7 @@ export function Modal({ open, onClose, title, children, size = 'sheet' }: ModalP
   return createPortal(
     <div
       className={clsx(
-        'fixed inset-0 z-50 flex justify-center bg-slate-900/40',
+        'fixed inset-0 z-50 flex justify-center bg-slate-900/40 backdrop-blur-sm',
         isAlert ? 'items-center p-4' : 'items-end sm:items-center',
       )}
       role="dialog"
@@ -41,7 +53,7 @@ export function Modal({ open, onClose, title, children, size = 'sheet' }: ModalP
     >
       <div
         className={clsx(
-          'max-h-[90vh] w-full overflow-y-auto bg-white shadow-xl',
+          'max-h-[90vh] w-full overscroll-contain overflow-y-auto bg-white shadow-xl',
           isAlert
             ? 'max-w-sm rounded-2xl p-4'
             : 'rounded-t-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:max-w-lg sm:rounded-2xl sm:p-6',

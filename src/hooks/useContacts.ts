@@ -7,18 +7,22 @@ interface ContactRow {
   id: string
   full_name: string
   phone: string | null
+  email: string | null
   dni: string | null
   status: string
   contact_date: string
+  next_contact_date: string | null
   notes: string | null
 }
 
 export interface ContactInput {
   fullName: string
   phone: string | null
+  email: string | null
   dni: string | null
   status: string
   contactDate: string
+  nextContactDate: string | null
   notes: string | null
 }
 
@@ -27,9 +31,11 @@ function mapContact(row: ContactRow): Contact {
     id: row.id,
     fullName: row.full_name,
     phone: row.phone,
+    email: row.email,
     dni: row.dni,
     status: row.status,
     contactDate: row.contact_date,
+    nextContactDate: row.next_contact_date,
     notes: row.notes,
   }
 }
@@ -66,9 +72,11 @@ export function useContacts() {
     const { error: insertError } = await supabase.from('contacts').insert({
       full_name: input.fullName,
       phone: input.phone,
+      email: input.email,
       dni: input.dni,
       status: input.status,
       contact_date: input.contactDate,
+      next_contact_date: input.nextContactDate,
       notes: input.notes,
       created_by: user.id,
     })
@@ -84,9 +92,11 @@ export function useContacts() {
       .update({
         full_name: input.fullName,
         phone: input.phone,
+        email: input.email,
         dni: input.dni,
         status: input.status,
         contact_date: input.contactDate,
+        next_contact_date: input.nextContactDate,
         notes: input.notes,
         updated_by: user.id,
       })

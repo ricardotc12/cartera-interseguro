@@ -145,8 +145,11 @@ export interface Contact {
   id: string
   fullName: string
   phone: string | null
+  email: string | null
   dni: string | null
   status: string
   contactDate: string
+  /** Fecha acordada para volver a contactar a la persona (ej. "contáctame el 25"). Null si no se acordó ninguna. */
+  nextContactDate: string | null
   notes: string | null
 }

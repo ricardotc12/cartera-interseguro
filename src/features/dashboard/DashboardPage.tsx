@@ -6,6 +6,7 @@ import { usePeriodsHistory } from '@/hooks/usePeriodsHistory'
 import { useAffiliates } from '@/hooks/useAffiliates'
 import { usePayments } from '@/hooks/usePayments'
 import { useProfile } from '@/hooks/useProfile'
+import { useCollectionAlerts } from '@/hooks/useCollectionAlerts'
 import { calculatePeriodForDate, calculateGoalProgress, calculateDaysUntil } from '@/domain'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -19,6 +20,7 @@ import { PeriodsHistoryCharts } from './PeriodsHistoryCharts'
 import { PendingPaymentsList } from './PendingPaymentsList'
 import { PeriodEndingBanner, PERIOD_ENDING_WARNING_DAYS } from './PeriodEndingBanner'
 import { CollectionAlertsModal } from './CollectionAlertsModal'
+import { ContactRemindersModal } from '@/features/contacts/ContactRemindersModal'
 import { WelcomeBanner } from './WelcomeBanner'
 import { Skeleton, KpiGridSkeleton } from '@/components/ui/Skeleton'
 
@@ -32,6 +34,7 @@ export function DashboardPage() {
   const { affiliates, loading: affiliatesLoading } = useAffiliates()
   const { payments, loading: paymentsLoading } = usePayments()
   const { profile, loading: profileLoading } = useProfile()
+  const { total: collectionAlertsTotal, loading: collectionAlertsLoading } = useCollectionAlerts()
 
   const loading =
     periodsLoading || icvLoading || metricsLoading || historyLoading || affiliatesLoading || paymentsLoading || profileLoading
@@ -64,12 +67,14 @@ export function DashboardPage() {
   const goalProgress = calculateGoalProgress(currentPeriod.vidaEmissionGoal, metrics.vidaEmission)
   const periodDaysLeft = calculateDaysUntil(currentPeriod.endDate, today())
   const periodEndingSoon = periodDaysLeft >= 0 && periodDaysLeft <= PERIOD_ENDING_WARNING_DAYS
+  const collectionAlertsShowing = !collectionAlertsLoading && !periodEndingSoon && collectionAlertsTotal > 0
 
   return (
     <div className="space-y-4">
       <WelcomeBanner />
       <PeriodEndingBanner currentPeriod={currentPeriod} />
       <CollectionAlertsModal suppressed={periodEndingSoon} />
+      <ContactRemindersModal suppressed={periodEndingSoon || collectionAlertsShowing} />
 
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-primary-700 to-primary-600 px-4 py-4 text-white sm:px-5">

@@ -157,9 +157,11 @@ type ContactRow = {
   id: string
   full_name: string
   phone: string | null
+  email: string | null
   dni: string | null
   status: string
   contact_date: string
+  next_contact_date: string | null
   notes: string | null
   created_at: string
   updated_at: string

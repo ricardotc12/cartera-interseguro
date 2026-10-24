@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
-import { isValidDni } from '@/lib/validators'
+import { isValidDni, isValidEmail } from '@/lib/validators'
 import { today } from '@/lib/date'
 import type { Contact } from '@/types/domain'
 import type { ContactInput } from '@/hooks/useContacts'
@@ -37,10 +37,12 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
 
   const [fullName, setFullName] = useState(contact?.fullName ?? '')
   const [phone, setPhone] = useState(contact?.phone ?? '')
+  const [email, setEmail] = useState(contact?.email ?? '')
   const [dni, setDni] = useState(contact?.dni ?? '')
   const [status, setStatus] = useState(contact?.status ?? '')
   const [addingNewStatus, setAddingNewStatus] = useState(false)
   const [contactDate, setContactDate] = useState(contact?.contactDate ?? today())
+  const [nextContactDate, setNextContactDate] = useState(contact?.nextContactDate ?? '')
   const [notes, setNotes] = useState(contact?.notes ?? '')
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -50,6 +52,7 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
   function validate(): boolean {
     const errors: Record<string, string> = {}
     if (!fullName.trim()) errors.fullName = 'Ingresa el nombre.'
+    if (email && !isValidEmail(email)) errors.email = 'Ingresa un correo válido.'
     if (dni && !isValidDni(dni)) errors.dni = 'El DNI debe tener exactamente 8 dígitos.'
     if (!status.trim()) errors.status = 'Ingresa o elige un estado.'
     if (!contactDate) errors.contactDate = 'Ingresa la fecha de contacto.'
@@ -66,9 +69,11 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
     const result = await onSubmit({
       fullName: fullName.trim(),
       phone: phone.trim() || null,
+      email: email.trim() || null,
       dni: dni.trim() || null,
       status: status.trim(),
       contactDate,
+      nextContactDate: nextContactDate || null,
       notes: notes.trim() || null,
     })
     setSubmitting(false)
@@ -110,6 +115,15 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField label="Celular" htmlFor="phone" hint="Opcional">
             <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass()} />
+          </FormField>
+          <FormField label="Correo" htmlFor="email" error={fieldErrors.email} hint="Opcional">
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={fieldClass(!!fieldErrors.email)}
+            />
           </FormField>
           <FormField label="DNI" htmlFor="dni" error={fieldErrors.dni} hint="Opcional">
             <input
@@ -164,6 +178,19 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
               value={contactDate}
               onChange={(e) => setContactDate(e.target.value)}
               className={fieldClass(!!fieldErrors.contactDate)}
+            />
+          </FormField>
+          <FormField
+            label="Volver a contactar el"
+            htmlFor="nextContactDate"
+            hint="Opcional — si acordaste una fecha, te avisamos un día antes"
+          >
+            <input
+              id="nextContactDate"
+              type="date"
+              value={nextContactDate}
+              onChange={(e) => setNextContactDate(e.target.value)}
+              className={fieldClass()}
             />
           </FormField>
         </div>
