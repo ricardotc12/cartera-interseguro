@@ -1,4 +1,5 @@
-import { Users, UserPlus, TrendingUp, Percent, Wallet, Award, Activity, Gauge, CheckCircle2, Clock } from 'lucide-react'
+import { useState } from 'react'
+import { Users, UserPlus, TrendingUp, Percent, Wallet, Banknote, Award, Activity, Gauge, CheckCircle2, Clock } from 'lucide-react'
 import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
 import { useIcvRecords } from '@/hooks/useIcvRecords'
 import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
@@ -21,10 +22,12 @@ import { PendingPaymentsList } from './PendingPaymentsList'
 import { PeriodEndingBanner, PERIOD_ENDING_WARNING_DAYS } from './PeriodEndingBanner'
 import { CollectionAlertsModal } from './CollectionAlertsModal'
 import { ContactRemindersModal } from '@/features/contacts/ContactRemindersModal'
+import { RealPolicyTotalModal } from './RealPolicyTotalModal'
 import { WelcomeBanner } from './WelcomeBanner'
 import { Skeleton, KpiGridSkeleton } from '@/components/ui/Skeleton'
 
 export function DashboardPage() {
+  const [showPolicyTotal, setShowPolicyTotal] = useState(false)
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
   const currentPeriod = calculatePeriodForDate(today(), periods)
   const { getForPeriod, loading: icvLoading } = useIcvRecords()
@@ -113,6 +116,14 @@ export function DashboardPage() {
         />
         <IndicatorCard label="Emisión Vida" value={formatCurrency(metrics.vidaEmission)} icon={TrendingUp} tone="primary" />
         <IndicatorCard
+          label="Monto real de pólizas"
+          value={formatCurrency(affiliates.flatMap((a) => a.policies).reduce((sum, p) => sum + p.affiliationAmount, 0))}
+          hint="Toca para ver el detalle"
+          icon={Banknote}
+          tone="success"
+          onClick={() => setShowPolicyTotal(true)}
+        />
+        <IndicatorCard
           label="Tramo de Incentivo"
           value={formatIncentiveTierValue(metrics.incentiveTier)}
           hint={metrics.incentiveTier?.valueType === 'fixed' ? 'Monto fijo' : undefined}
@@ -160,6 +171,8 @@ export function DashboardPage() {
       <PeriodsHistoryCharts history={history} />
 
       <PendingPaymentsList payments={payments} />
+
+      <RealPolicyTotalModal open={showPolicyTotal} onClose={() => setShowPolicyTotal(false)} affiliates={affiliates} />
     </div>
   )
 }

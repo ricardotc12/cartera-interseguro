@@ -1,9 +1,10 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/(index.html|sw.js|registerSW.js|manifest.webmanifest)",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
-  ]
+  ],
+  "crons": [{ "path": "/api/send-daily-alerts", "schedule": "0 12 * * *" }]
 }
