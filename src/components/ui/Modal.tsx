@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { clsx } from '@/lib/clsx'
 
@@ -38,6 +38,29 @@ export function Modal({ open, onClose, title, children, size = 'sheet' }: ModalP
     }
   }, [open])
 
+  // iOS no redimensiona la página cuando aparece el teclado — solo el "viewport visual".
+  // Con position:fixed anclado al viewport de layout, el modal queda flotando/"moviéndose"
+  // mientras se escribe, en vez de quedarse pegado a lo que realmente se ve en pantalla.
+  // Siguiendo el teclado con la API visualViewport, el modal se queda fijo de verdad.
+  const [viewport, setViewport] = useState<{ height: number; offsetTop: number } | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const vv = window.visualViewport
+    if (!vv) return
+    function update() {
+      setViewport({ height: vv!.height, offsetTop: vv!.offsetTop })
+    }
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+      setViewport(null)
+    }
+  }, [open])
+
   if (!open) return null
 
   const isAlert = size === 'alert'
@@ -45,9 +68,13 @@ export function Modal({ open, onClose, title, children, size = 'sheet' }: ModalP
   return createPortal(
     <div
       className={clsx(
-        'fixed inset-0 z-50 flex justify-center bg-slate-900/40 backdrop-blur-sm',
+        'fixed inset-x-0 top-0 z-50 flex justify-center bg-slate-900/40 backdrop-blur-sm',
         isAlert ? 'items-center p-4' : 'items-end sm:items-center',
       )}
+      style={{
+        height: viewport?.height ?? '100dvh',
+        transform: viewport?.offsetTop ? `translateY(${viewport.offsetTop}px)` : undefined,
+      }}
       role="dialog"
       aria-modal="true"
     >

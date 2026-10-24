@@ -9,6 +9,8 @@ interface AuthContextValue {
   /** true desde que se abre el enlace de "olvidé mi contraseña" hasta que se guarda la contraseña nueva: aunque ya exista una sesión válida, no debe dejar entrar al resto de la app todavía. */
   recoveryPending: boolean
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>
+  /** Crea la cuenta y, si la confirmación de correo está activada en Supabase (por defecto sí), no deja una sesión activa hasta que confirme. */
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>
   signOut: () => Promise<void>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
   resetPasswordForEmail: (email: string) => Promise<{ error: string | null }>
@@ -55,6 +57,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }
 
+  async function signUp(email: string, password: string, fullName: string) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: window.location.origin,
+      },
+    })
+    if (error) return { error: error.message, needsEmailConfirmation: false }
+    // Si la confirmación de correo está activada, Supabase crea el usuario pero no entrega sesión.
+    return { error: null, needsEmailConfirmation: !data.session }
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setRecoveryPending(false)
@@ -82,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         recoveryPending,
         signInWithPassword,
+        signUp,
         signOut,
         updatePassword,
         resetPasswordForEmail,
