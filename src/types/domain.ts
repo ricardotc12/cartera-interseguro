@@ -151,5 +151,7 @@ export interface Contact {
   contactDate: string
   /** Fecha acordada para volver a contactar a la persona (ej. "contáctame el 25"). Null si no se acordó ninguna. */
   nextContactDate: string | null
+  /** Fecha de vencimiento de la cotización enviada (solo aplica si status es "Cotización enviada"). Null si no aplica. */
+  quoteExpiryDate: string | null
   notes: string | null
 }

@@ -43,7 +43,10 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
   const [addingNewStatus, setAddingNewStatus] = useState(false)
   const [contactDate, setContactDate] = useState(contact?.contactDate ?? today())
   const [nextContactDate, setNextContactDate] = useState(contact?.nextContactDate ?? '')
+  const [quoteExpiryDate, setQuoteExpiryDate] = useState(contact?.quoteExpiryDate ?? '')
   const [notes, setNotes] = useState(contact?.notes ?? '')
+
+  const isQuoteSent = status === 'Cotización enviada'
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -74,6 +77,7 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
       status: status.trim(),
       contactDate,
       nextContactDate: nextContactDate || null,
+      quoteExpiryDate: isQuoteSent ? quoteExpiryDate || null : null,
       notes: notes.trim() || null,
     })
     setSubmitting(false)
@@ -193,6 +197,21 @@ export function ContactFormModal({ open, onClose, contact, statusSuggestions, on
               className={fieldClass()}
             />
           </FormField>
+          {isQuoteSent && (
+            <FormField
+              label="La cotización vence el"
+              htmlFor="quoteExpiryDate"
+              hint="Te avisamos 2 días antes para que puedas renovarla"
+            >
+              <input
+                id="quoteExpiryDate"
+                type="date"
+                value={quoteExpiryDate}
+                onChange={(e) => setQuoteExpiryDate(e.target.value)}
+                className={fieldClass()}
+              />
+            </FormField>
+          )}
         </div>
 
         <FormField label="Observaciones" htmlFor="notes" hint="Opcional">

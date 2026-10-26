@@ -12,6 +12,7 @@ interface ContactRow {
   status: string
   contact_date: string
   next_contact_date: string | null
+  quote_expiry_date: string | null
   notes: string | null
 }
 
@@ -23,6 +24,7 @@ export interface ContactInput {
   status: string
   contactDate: string
   nextContactDate: string | null
+  quoteExpiryDate: string | null
   notes: string | null
 }
 
@@ -36,6 +38,7 @@ function mapContact(row: ContactRow): Contact {
     status: row.status,
     contactDate: row.contact_date,
     nextContactDate: row.next_contact_date,
+    quoteExpiryDate: row.quote_expiry_date,
     notes: row.notes,
   }
 }
@@ -77,6 +80,7 @@ export function useContacts() {
       status: input.status,
       contact_date: input.contactDate,
       next_contact_date: input.nextContactDate,
+      quote_expiry_date: input.quoteExpiryDate,
       notes: input.notes,
       created_by: user.id,
     })
@@ -97,6 +101,7 @@ export function useContacts() {
         status: input.status,
         contact_date: input.contactDate,
         next_contact_date: input.nextContactDate,
+        quote_expiry_date: input.quoteExpiryDate,
         notes: input.notes,
         updated_by: user.id,
       })

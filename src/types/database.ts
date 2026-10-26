@@ -162,6 +162,7 @@ type ContactRow = {
   status: string
   contact_date: string
   next_contact_date: string | null
+  quote_expiry_date: string | null
   notes: string | null
   created_at: string
   updated_at: string

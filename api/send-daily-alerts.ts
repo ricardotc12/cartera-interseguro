@@ -1,7 +1,7 @@
 // Función serverless (Vercel Cron) que revisa, para cada asesora, pagos vencidos/por
-// vencer y contactos a los que toca volver a escribir, y le manda un correo-resumen por
-// Resend. Corre sola todos los días (ver "crons" en vercel.json) — no depende de que la
-// app esté abierta en ningún navegador.
+// vencer, contactos a los que toca volver a escribir y cotizaciones por vencer, y le
+// manda un correo-resumen por Resend. Corre sola todos los días (ver "crons" en
+// vercel.json) — no depende de que la app esté abierta en ningún navegador.
 //
 // No importa nada de src/ a propósito: varios archivos de src/domain usan el alias "@/"
 // que Vite resuelve para el frontend, pero el bundler de Vercel para funciones de /api no
@@ -23,6 +23,8 @@ export const config = { runtime: 'edge' }
 const RESEND_FROM = 'Cartera Interseguro <onboarding@resend.dev>'
 /** Mismo horizonte que src/domain/payments.ts: PENDING_WINDOW_DAYS. */
 const PENDING_WINDOW_DAYS = 1
+/** Mismo horizonte que src/hooks/useQuoteExpiryReminders.ts: QUOTE_EXPIRY_WINDOW_DAYS. */
+const QUOTE_EXPIRY_WINDOW_DAYS = 2
 
 function daysUntil(dateStr: string, referenceDate: string): number {
   return Math.floor((new Date(dateStr).getTime() - new Date(referenceDate).getTime()) / 86_400_000)
@@ -72,6 +74,7 @@ interface PaymentRow {
 interface ContactRow {
   full_name: string
   next_contact_date: string | null
+  quote_expiry_date: string | null
   created_by: string
 }
 
@@ -120,7 +123,10 @@ export default async function handler(request: Request): Promise<Response> {
     supabase
       .from('payments')
       .select('year_month, due_date, expected_amount, status, created_by, policies(policy_number, affiliates(first_name, last_name))'),
-    supabase.from('contacts').select('full_name, next_contact_date, created_by').not('next_contact_date', 'is', null),
+    supabase
+      .from('contacts')
+      .select('full_name, next_contact_date, quote_expiry_date, created_by')
+      .or('next_contact_date.not.is.null,quote_expiry_date.not.is.null'),
     supabase.auth.admin.listUsers({ perPage: 1000 }),
   ])
 
@@ -153,7 +159,10 @@ export default async function handler(request: Request): Promise<Response> {
     const userContacts = contacts.filter((c) => c.created_by === userId && c.next_contact_date)
     const dueContacts = userContacts.filter((c) => daysUntil(c.next_contact_date as string, today) <= PENDING_WINDOW_DAYS)
 
-    if (overduePayments.length === 0 && dueContacts.length === 0) continue
+    const userQuotes = contacts.filter((c) => c.created_by === userId && c.quote_expiry_date)
+    const dueQuotes = userQuotes.filter((c) => daysUntil(c.quote_expiry_date as string, today) <= QUOTE_EXPIRY_WINDOW_DAYS)
+
+    if (overduePayments.length === 0 && dueContacts.length === 0 && dueQuotes.length === 0) continue
 
     const paymentRows = overduePayments
       .map((p) => {
@@ -173,10 +182,19 @@ export default async function handler(request: Request): Promise<Response> {
       })
       .join('')
 
+    const quoteRows = dueQuotes
+      .map((c) => {
+        const days = daysUntil(c.quote_expiry_date as string, today)
+        const text = days < 0 ? `vencida hace ${Math.abs(days)} día(s)` : days === 0 ? 'vence hoy' : `vence en ${days} día(s)`
+        return `<li>${c.full_name} — ${text} (${formatDate(c.quote_expiry_date as string)})</li>`
+      })
+      .join('')
+
     const html = `
       <h2>Resumen de Cartera Interseguro</h2>
       ${overduePayments.length > 0 ? `<h3>Pagos pendientes/vencidos (${overduePayments.length})</h3><ul>${paymentRows}</ul>` : ''}
       ${dueContacts.length > 0 ? `<h3>Contactos para hoy/mañana (${dueContacts.length})</h3><ul>${contactRows}</ul>` : ''}
+      ${dueQuotes.length > 0 ? `<h3>Cotizaciones por vencer (${dueQuotes.length})</h3><ul>${quoteRows}</ul>` : ''}
       <p><a href="${appUrl}">Ingresar al portal</a></p>
     `
 
