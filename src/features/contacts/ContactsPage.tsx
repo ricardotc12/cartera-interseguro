@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Download, Phone, MessageCircle, Mail } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Download, Phone, MessageCircle, Mail, Eye } from 'lucide-react'
 import { useContacts } from '@/hooks/useContacts'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/format'
 import { today } from '@/lib/date'
 import type { Contact } from '@/types/domain'
 import { ContactFormModal } from './ContactFormModal'
+import { ContactDetailModal } from './ContactDetailModal'
 
 function matchesSearch(contact: Contact, query: string): boolean {
   if (!query) return true
@@ -29,13 +30,19 @@ function ContactActions({ contact }: { contact: Contact }) {
     <>
       {contact.phone && (
         <>
-          <a href={`tel:${contact.phone}`} className="rounded p-1.5 text-blue-500 hover:bg-blue-50" title="Llamar" aria-label="Llamar">
+          <a
+            href={`tel:${contact.phone}`}
+            onClick={(e) => e.stopPropagation()}
+            className="rounded p-1.5 text-blue-500 hover:bg-blue-50"
+            title="Llamar" aria-label="Llamar"
+          >
             <Phone className="h-4 w-4" />
           </a>
           <a
             href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`}
             target="_blank"
             rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="rounded p-1.5 text-emerald-500 hover:bg-emerald-50"
             title="WhatsApp" aria-label="WhatsApp"
           >
@@ -48,6 +55,7 @@ function ContactActions({ contact }: { contact: Contact }) {
           href={gmailComposeUrl(contact.email)}
           target="_blank"
           rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="rounded p-1.5 text-red-500 hover:bg-red-50"
           title="Enviar correo (Gmail)" aria-label="Enviar correo (Gmail)"
         >
@@ -64,6 +72,7 @@ export function ContactsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
   const [creating, setCreating] = useState(false)
+  const [viewing, setViewing] = useState<Contact | undefined>(undefined)
   const [editing, setEditing] = useState<Contact | undefined>(undefined)
   const [deleting, setDeleting] = useState<Contact | undefined>(undefined)
 
@@ -184,6 +193,13 @@ export function ContactsPage() {
                       <div className="flex justify-end gap-1">
                         <ContactActions contact={contact} />
                         <button
+                          onClick={() => setViewing(contact)}
+                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          title="Ver detalle" aria-label="Ver detalle"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => setEditing(contact)}
                           className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                           title="Editar" aria-label="Editar"
@@ -208,7 +224,7 @@ export function ContactsPage() {
           {/* Móvil: cards */}
           <div className="space-y-3 md:hidden">
             {filtered.map((contact) => (
-              <Card key={contact.id}>
+              <Card key={contact.id} onClick={() => setViewing(contact)} className="cursor-pointer active:bg-slate-50">
                 <CardBody>
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -223,15 +239,32 @@ export function ContactsPage() {
                   {contact.nextContactDate && (
                     <p className="text-xs font-medium text-amber-600">Recontactar: {formatDate(contact.nextContactDate)}</p>
                   )}
+                  {contact.quoteExpiryDate && (
+                    <p className="text-xs font-medium text-amber-600">Cotización vence: {formatDate(contact.quoteExpiryDate)}</p>
+                  )}
                   <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
                     <div className="flex gap-1">
                       <ContactActions contact={contact} />
                     </div>
                     <div className="flex gap-1">
-                      <button onClick={() => setEditing(contact)} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" aria-label="Editar">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditing(contact)
+                        }}
+                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        title="Editar" aria-label="Editar"
+                      >
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setDeleting(contact)} className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Eliminar" aria-label="Eliminar">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleting(contact)
+                        }}
+                        className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        title="Eliminar" aria-label="Eliminar"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -246,6 +279,8 @@ export function ContactsPage() {
       {creating && (
         <ContactFormModal open={creating} onClose={() => setCreating(false)} statusSuggestions={statusOptions} onSubmit={createContact} />
       )}
+
+      {viewing && <ContactDetailModal open={!!viewing} contact={viewing} onClose={() => setViewing(undefined)} />}
 
       {editing && (
         <ContactFormModal
