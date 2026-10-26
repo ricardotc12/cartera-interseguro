@@ -15,7 +15,6 @@ import type { ContactInput } from '@/hooks/useContacts'
 export const SUGGESTED_STATUSES = [
   'Contactado',
   'Cotización enviada',
-  'Interesado - en evaluación',
   'No contesta',
   'No quiso la póliza',
   'Pendiente de seguimiento',

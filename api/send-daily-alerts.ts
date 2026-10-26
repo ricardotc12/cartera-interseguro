@@ -1,14 +1,16 @@
 // Función serverless (Vercel Cron) que revisa, para cada asesora, pagos vencidos/por
 // vencer, contactos a los que toca volver a escribir y cotizaciones por vencer, y le
-// manda un correo-resumen por Resend. Corre sola todos los días (ver "crons" en
-// vercel.json) — no depende de que la app esté abierta en ningún navegador.
+// manda un correo-resumen por Resend. El cron en sí corre todos los días (ver "crons" en
+// vercel.json) para poder revisar el estado al día, pero NO manda un correo diario: solo
+// envía cuando algo cae justo en uno de los "momentos" de abajo, así que una asesora sin
+// nada pendiente ese día simplemente no recibe nada. No depende de que la app esté abierta
+// en ningún navegador.
 //
 // No importa nada de src/ a propósito: varios archivos de src/domain usan el alias "@/"
 // que Vite resuelve para el frontend, pero el bundler de Vercel para funciones de /api no
 // lo resuelve igual — para no arriesgar que eso se rompa en producción (no pasa por el
 // mismo build/test que el resto del código de esta sesión), la lógica de fechas que
-// necesita se copia aquí mismo, autocontenida. Si cambia la regla de "Pendiente"/"Al
-// día"/vencido en src/domain/payments.ts, hay que reflejar el mismo cambio acá.
+// necesita se copia aquí mismo, autocontenida.
 //
 // Variables de entorno que necesita (Vercel → Settings → Environment Variables):
 //   VITE_SUPABASE_URL           (la misma que ya usa la app)
@@ -21,11 +23,21 @@ import { createClient } from '@supabase/supabase-js'
 export const config = { runtime: 'edge' }
 
 const RESEND_FROM = 'Cartera Interseguro <onboarding@resend.dev>'
-/** Mismo horizonte que src/domain/payments.ts: PENDING_WINDOW_DAYS. */
-const PENDING_WINDOW_DAYS = 1
-/** Mismo horizonte que src/hooks/useQuoteExpiryReminders.ts: QUOTE_EXPIRY_WINDOW_DAYS. */
-const QUOTE_EXPIRY_WINDOW_DAYS = 2
 
+/**
+ * Momentos exactos (días respecto a la fecha límite) en los que se manda el correo de
+ * cobranza — no "mientras siga sin pagar", sino puntual: un día antes, el mismo día que
+ * vence, y 7 días después (ya cerrada la cobranza del mes, para que se ponga al día).
+ */
+const PAYMENT_ALERT_DAYS_BEFORE_DUE = [1, 0, -7]
+
+/** Igual de puntual: un solo correo, 2 días antes de que venza la cotización. */
+const QUOTE_EXPIRY_ALERT_DAYS_BEFORE = 2
+
+/** Igual de puntual: un día antes y el mismo día acordado para recontactar. */
+const CONTACT_ALERT_DAYS_BEFORE = [1, 0]
+
+/** Días que faltan para dateStr (positivo = todavía falta, 0 = hoy, negativo = ya pasó). */
 function daysUntil(dateStr: string, referenceDate: string): number {
   return Math.floor((new Date(dateStr).getTime() - new Date(referenceDate).getTime()) / 86_400_000)
 }
@@ -38,19 +50,6 @@ function defaultDueDateForMonth(yearMonth: string): string {
 /** Copia de src/domain/payments.ts:effectiveDueDate. */
 function effectiveDueDate(yearMonth: string, dueDate: string | null): string {
   return dueDate ?? defaultDueDateForMonth(yearMonth)
-}
-
-/** Copia de src/domain/payments.ts:calculateDaysOverdue. */
-function calculateDaysOverdue(dueDate: string, referenceDate: string): number | null {
-  const diffDays = daysUntil(referenceDate, dueDate)
-  return diffDays > 0 ? diffDays : null
-}
-
-/** Devuelve true si el pago ya necesita acción (no está "Al día" todavía) — copia de la regla de src/domain/payments.ts:getDisplayPaymentStatus. */
-function isPaymentActionable(status: string, dueDate: string, referenceDate: string): boolean {
-  if (status !== 'no_pagado') return true
-  if (referenceDate > dueDate) return true
-  return daysUntil(dueDate, referenceDate) <= PENDING_WINDOW_DAYS
 }
 
 // El cron está programado para correr en la mañana, hora Perú (ver vercel.json) — en esa
@@ -150,49 +149,45 @@ export default async function handler(request: Request): Promise<Response> {
     if (!email) continue
 
     const userPayments = payments.filter((p) => p.created_by === userId)
-    const overduePayments = userPayments.filter((p) => {
+    const duePayments = userPayments.filter((p) => {
       if (p.status !== 'no_pagado' && p.status !== 'pendiente_confirmar') return false
       const dueDate = effectiveDueDate(p.year_month, p.due_date)
-      return isPaymentActionable(p.status, dueDate, today)
+      return PAYMENT_ALERT_DAYS_BEFORE_DUE.includes(daysUntil(dueDate, today))
     })
 
     const userContacts = contacts.filter((c) => c.created_by === userId && c.next_contact_date)
-    const dueContacts = userContacts.filter((c) => daysUntil(c.next_contact_date as string, today) <= PENDING_WINDOW_DAYS)
+    const dueContacts = userContacts.filter((c) => CONTACT_ALERT_DAYS_BEFORE.includes(daysUntil(c.next_contact_date as string, today)))
 
     const userQuotes = contacts.filter((c) => c.created_by === userId && c.quote_expiry_date)
-    const dueQuotes = userQuotes.filter((c) => daysUntil(c.quote_expiry_date as string, today) <= QUOTE_EXPIRY_WINDOW_DAYS)
+    const dueQuotes = userQuotes.filter((c) => daysUntil(c.quote_expiry_date as string, today) === QUOTE_EXPIRY_ALERT_DAYS_BEFORE)
 
-    if (overduePayments.length === 0 && dueContacts.length === 0 && dueQuotes.length === 0) continue
+    if (duePayments.length === 0 && dueContacts.length === 0 && dueQuotes.length === 0) continue
 
-    const paymentRows = overduePayments
+    const paymentRows = duePayments
       .map((p) => {
         const dueDate = effectiveDueDate(p.year_month, p.due_date)
-        const overdueDays = calculateDaysOverdue(dueDate, today)
+        const days = daysUntil(dueDate, today)
+        const text = days === 1 ? 'vence mañana' : days === 0 ? 'vence hoy' : `sin pagar desde hace ${Math.abs(days)} días (cobranza cerrada)`
         const name = p.policies?.affiliates ? `${p.policies.affiliates.first_name} ${p.policies.affiliates.last_name}` : 'Afiliado'
-        const text = overdueDays != null ? `${overdueDays} días de atraso` : `vence el ${formatDate(dueDate)}`
-        return `<li>${name} — ${formatCurrency(p.expected_amount)} — ${text}</li>`
+        return `<li>${name} — ${formatCurrency(p.expected_amount)} — ${text} (${formatDate(dueDate)})</li>`
       })
       .join('')
 
     const contactRows = dueContacts
       .map((c) => {
         const days = daysUntil(c.next_contact_date as string, today)
-        const text = days < 0 ? `hace ${Math.abs(days)} día(s)` : days === 0 ? 'hoy' : 'mañana'
+        const text = days === 1 ? 'mañana' : 'hoy'
         return `<li>${c.full_name} — contactar ${text} (${formatDate(c.next_contact_date as string)})</li>`
       })
       .join('')
 
     const quoteRows = dueQuotes
-      .map((c) => {
-        const days = daysUntil(c.quote_expiry_date as string, today)
-        const text = days < 0 ? `vencida hace ${Math.abs(days)} día(s)` : days === 0 ? 'vence hoy' : `vence en ${days} día(s)`
-        return `<li>${c.full_name} — ${text} (${formatDate(c.quote_expiry_date as string)})</li>`
-      })
+      .map((c) => `<li>${c.full_name} — vence en ${QUOTE_EXPIRY_ALERT_DAYS_BEFORE} días (${formatDate(c.quote_expiry_date as string)})</li>`)
       .join('')
 
     const html = `
       <h2>Resumen de Cartera Interseguro</h2>
-      ${overduePayments.length > 0 ? `<h3>Pagos pendientes/vencidos (${overduePayments.length})</h3><ul>${paymentRows}</ul>` : ''}
+      ${duePayments.length > 0 ? `<h3>Cobranza (${duePayments.length})</h3><ul>${paymentRows}</ul>` : ''}
       ${dueContacts.length > 0 ? `<h3>Contactos para hoy/mañana (${dueContacts.length})</h3><ul>${contactRows}</ul>` : ''}
       ${dueQuotes.length > 0 ? `<h3>Cotizaciones por vencer (${dueQuotes.length})</h3><ul>${quoteRows}</ul>` : ''}
       <p><a href="${appUrl}">Ingresar al portal</a></p>
