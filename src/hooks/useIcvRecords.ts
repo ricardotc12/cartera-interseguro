@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { createHookContext } from '@/lib/createHookContext'
 import type { IcvRecord } from '@/types/domain'
 
 interface IcvRecordRow {
@@ -14,7 +15,7 @@ function mapIcvRecord(row: IcvRecordRow): IcvRecord {
   return { id: row.id, periodId: row.period_id, icvPercentage: row.icv_percentage, notes: row.notes }
 }
 
-export function useIcvRecords() {
+function useIcvRecordsImpl() {
   const { user } = useAuth()
   const [records, setRecords] = useState<IcvRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,3 +65,5 @@ export function useIcvRecords() {
 
   return { records, loading, error, refresh, getForPeriod, setIcvForPeriod }
 }
+
+export const [IcvRecordsProvider, useIcvRecords] = createHookContext(useIcvRecordsImpl, 'useIcvRecords')

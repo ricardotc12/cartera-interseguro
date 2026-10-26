@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { createHookContext } from '@/lib/createHookContext'
 import type { Contact } from '@/types/domain'
 
 interface ContactRow {
@@ -44,7 +45,7 @@ function mapContact(row: ContactRow): Contact {
 }
 
 /** CRUD del registro de seguimiento de contactos (prospección), aparte de la cartera de afiliados. */
-export function useContacts() {
+function useContactsImpl() {
   const { user } = useAuth()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
@@ -121,3 +122,5 @@ export function useContacts() {
 
   return { contacts, loading, error, createContact, updateContact, deleteContact }
 }
+
+export const [ContactsProvider, useContacts] = createHookContext(useContactsImpl, 'useContacts')

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { createHookContext } from '@/lib/createHookContext'
 import type { Affiliate, AffiliateStatus, Policy } from '@/types/domain'
 
 export interface AffiliateWithPolicies extends Affiliate {
@@ -90,7 +91,7 @@ function friendlyError(error: { code?: string; message: string; details?: string
   return error.message
 }
 
-export function useAffiliates() {
+function useAffiliatesImpl() {
   const { user } = useAuth()
   const [affiliates, setAffiliates] = useState<AffiliateWithPolicies[]>([])
   const [loading, setLoading] = useState(true)
@@ -240,3 +241,5 @@ export function useAffiliates() {
     deletePolicy,
   }
 }
+
+export const [AffiliatesProvider, useAffiliates] = createHookContext(useAffiliatesImpl, 'useAffiliates')

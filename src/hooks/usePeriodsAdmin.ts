@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { createHookContext } from '@/lib/createHookContext'
 import type { CollectionFactorRule, IcvFactorRule, IncentivePeriod, IncentiveRule, PeriodStatus } from '@/types/domain'
 
 export interface PeriodInput {
@@ -142,7 +143,7 @@ function friendlyError(error: { code?: string; message: string }): string {
   return error.message
 }
 
-export function usePeriodsAdmin() {
+function usePeriodsAdminImpl() {
   const { user } = useAuth()
   const [periods, setPeriods] = useState<PeriodWithRules[]>([])
   const [loading, setLoading] = useState(true)
@@ -331,3 +332,5 @@ export function usePeriodsAdmin() {
 
   return { periods, loading, error, refresh, createPeriod, updatePeriod, setPeriodStatus, deletePeriod }
 }
+
+export const [PeriodsAdminProvider, usePeriodsAdmin] = createHookContext(usePeriodsAdminImpl, 'usePeriodsAdmin')

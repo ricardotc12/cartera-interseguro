@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { createHookContext } from '@/lib/createHookContext'
 import { generateOwedMonths, defaultDueDateForMonth } from '@/domain'
 import { today } from '@/lib/date'
 import type { Affiliate, AffiliateStatus, Payment, PaymentStatus, Policy } from '@/types/domain'
@@ -112,7 +113,7 @@ function mapPayment(row: PaymentRow): PaymentWithContext | null {
   }
 }
 
-export function usePayments() {
+function usePaymentsImpl() {
   const { user } = useAuth()
   const [payments, setPayments] = useState<PaymentWithContext[]>([])
   const [loading, setLoading] = useState(true)
@@ -205,3 +206,5 @@ export function usePayments() {
 
   return { payments, loading, error, refresh, updatePayment }
 }
+
+export const [PaymentsProvider, usePayments] = createHookContext(usePaymentsImpl, 'usePayments')

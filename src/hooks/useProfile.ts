@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { createHookContext } from '@/lib/createHookContext'
 
 export interface Profile {
   id: string
@@ -9,7 +10,7 @@ export interface Profile {
   showIcv: boolean
 }
 
-export function useProfile() {
+function useProfileImpl() {
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -63,3 +64,5 @@ export function useProfile() {
 
   return { profile, loading, setFullName, setShowCollectionRatio, setShowIcv }
 }
+
+export const [ProfileProvider, useProfile] = createHookContext(useProfileImpl, 'useProfile')

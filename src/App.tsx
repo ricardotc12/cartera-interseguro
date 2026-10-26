@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/useAuth'
+import { DataProviders } from '@/providers/DataProviders'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
@@ -29,24 +30,26 @@ function PageFallback() {
 export default function App() {
   return (
     <AuthProvider>
-      <Suspense fallback={<PageFallback />}>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/restablecer-password" element={<ResetPasswordPage />} />
-          <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/afiliados" element={<ProtectedRoute><AffiliatesPage /></ProtectedRoute>} />
-          <Route path="/contactos" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
-          <Route path="/cobranza" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
-          <Route path="/metas" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
-          <Route path="/incentivos" element={<ProtectedRoute><IncentivesPage /></ProtectedRoute>} />
-          <Route path="/factor-cobranza" element={<ProtectedRoute><CollectionFactorPage /></ProtectedRoute>} />
-          <Route path="/icv" element={<ProtectedRoute><IcvPage /></ProtectedRoute>} />
-          <Route path="/simulador" element={<ProtectedRoute><SimulatorPage /></ProtectedRoute>} />
-          <Route path="/cotizador" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
-          <Route path="/reportes" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
-          <Route path="/configuracion/periodos" element={<ProtectedRoute><PeriodsSettingsPage /></ProtectedRoute>} />
-        </Routes>
-      </Suspense>
+      <DataProviders>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/restablecer-password" element={<ResetPasswordPage />} />
+            <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/afiliados" element={<ProtectedRoute><AffiliatesPage /></ProtectedRoute>} />
+            <Route path="/contactos" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
+            <Route path="/cobranza" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
+            <Route path="/metas" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
+            <Route path="/incentivos" element={<ProtectedRoute><IncentivesPage /></ProtectedRoute>} />
+            <Route path="/factor-cobranza" element={<ProtectedRoute><CollectionFactorPage /></ProtectedRoute>} />
+            <Route path="/icv" element={<ProtectedRoute><IcvPage /></ProtectedRoute>} />
+            <Route path="/simulador" element={<ProtectedRoute><SimulatorPage /></ProtectedRoute>} />
+            <Route path="/cotizador" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
+            <Route path="/reportes" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+            <Route path="/configuracion/periodos" element={<ProtectedRoute><PeriodsSettingsPage /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
+      </DataProviders>
     </AuthProvider>
   )
 }
