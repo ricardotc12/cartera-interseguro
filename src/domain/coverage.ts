@@ -47,7 +47,16 @@ export function calculateEmissionAmount(coverages: CoverageAmount[]): number {
     .reduce((sum, c) => sum + c.amount, 0)
 }
 
-/** Monto de Cobranza = suma de TODAS las coberturas marcadas (lo que paga el cliente). */
+/**
+ * El monto que el agente tipea por cobertura viene en la escala de Emisión
+ * (anualizado), no en lo que el cliente paga por cuota — la asesora confirmó
+ * que el Monto de Cobranza real se obtiene dividiendo esa suma entre 10,
+ * siempre, sin importar la modalidad ni el multiplicador del período (son
+ * cosas distintas, aunque hoy compartan el mismo número).
+ */
+export const COLLECTION_AMOUNT_DIVISOR = 10
+
+/** Monto de Cobranza = (suma de TODAS las coberturas marcadas) ÷ 10 — lo que el cliente paga por cuota. */
 export function calculateCollectionAmount(coverages: CoverageAmount[]): number {
-  return coverages.reduce((sum, c) => sum + c.amount, 0)
+  return coverages.reduce((sum, c) => sum + c.amount, 0) / COLLECTION_AMOUNT_DIVISOR
 }

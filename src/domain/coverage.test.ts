@@ -17,21 +17,34 @@ describe('calculateEmissionAmount', () => {
 })
 
 describe('calculateCollectionAmount', () => {
-  it('suma todas las coberturas marcadas, obligatorias y adicionales', () => {
+  it('suma todas las coberturas marcadas (obligatorias y adicionales) y divide entre 10', () => {
     const coverages = [
       { coverageCode: 'fallecimiento' as const, amount: 50 },
       { coverageCode: 'invalidez_total_adelanto_capital' as const, amount: 30 },
       { coverageCode: 'fallecimiento_accidente' as const, amount: 20 },
     ]
-    expect(calculateCollectionAmount(coverages)).toBe(100)
+    expect(calculateCollectionAmount(coverages)).toBe(10)
   })
 
-  it('es igual a calculateEmissionAmount cuando solo hay obligatorias', () => {
+  it('con el caso real reportado: 19944.90 en coberturas obligatorias da 1994.49 de cobranza', () => {
+    const coverages = [
+      { coverageCode: 'fallecimiento' as const, amount: 12000 },
+      { coverageCode: 'invalidez_total_adelanto_capital' as const, amount: 7944.9 },
+    ]
+    expect(calculateCollectionAmount(coverages)).toBeCloseTo(1994.49, 5)
+  })
+
+  it('ya no es igual a calculateEmissionAmount cuando solo hay obligatorias (queda dividido entre 10)', () => {
     const coverages = [
       { coverageCode: 'fallecimiento' as const, amount: 50 },
       { coverageCode: 'invalidez_total_adelanto_capital' as const, amount: 30 },
     ]
-    expect(calculateCollectionAmount(coverages)).toBe(calculateEmissionAmount(coverages))
+    expect(calculateCollectionAmount(coverages)).toBe(8)
+    expect(calculateEmissionAmount(coverages)).toBe(80)
+  })
+
+  it('devuelve 0 si no hay coberturas', () => {
+    expect(calculateCollectionAmount([])).toBe(0)
   })
 })
 

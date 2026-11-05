@@ -48,9 +48,8 @@ Las alertas dentro del propio Dashboard (modales al entrar, campanita de la barr
 
 - **Emisión Vida** = Monto de Emisión × multiplicador del período vigente (hoy ×10) — usado para medir metas e incentivos de Interseguro. Es DISTINTO del "monto real de pólizas" (suma sin multiplicar de Monto de Cobranza, lo que de verdad pagan los afiliados — tarjeta/modal propios en el Dashboard).
 - **Coberturas por póliza** (`src/domain/coverage.ts`, tabla `policy_coverages`): 7 coberturas fijas (2 obligatorias — Fallecimiento, Invalidez Total — + 5 adicionales). El agente tipea a mano el monto de cada cobertura marcada; no hay tabla de tarifas automática.
-  - **Monto de Emisión** = suma de las coberturas OBLIGATORIAS. Es la base de Emisión Vida (comisionable).
-  - **Monto de Cobranza** = suma de TODAS las coberturas marcadas (obligatorias + adicionales). Es lo que paga el cliente en cada cuota.
-  - Si solo hay obligatorias, Emisión == Cobranza; con adicionales, Cobranza > Emisión.
+  - **Monto de Emisión** = suma de las coberturas OBLIGATORIAS, sin dividir. Es la base de Emisión Vida (comisionable).
+  - **Monto de Cobranza** = (suma de TODAS las coberturas marcadas, obligatorias + adicionales) ÷ 10 (`COLLECTION_AMOUNT_DIVISOR` en `src/domain/coverage.ts`) — lo que el agente tipea por cobertura viene en escala de Emisión (anualizado), no en lo que el cliente paga por cuota; el ÷10 es fijo, no depende del multiplicador del período ni de la modalidad, aunque hoy compartan el mismo número. Por eso Cobranza queda MENOR que Emisión incluso con solo las obligatorias — ya no son iguales (cambio de regla confirmado 2026-11-05; las pólizas registradas antes de ese cambio quedaron con la fórmula vieja a propósito, sin corregir retroactivamente).
 - **Modalidad** (`mensual`/`trimestral`/`semestral`/`anual`, columna `policies.modalidad`): cada cuántos meses se genera una cuota de cobranza (`generateOwedMonths(..., stepMonths)`). No afecta el monto, solo la cadencia.
 - **Tramos de incentivo, factor de cobranza, factor ICV**: configurables por período en `/configuracion/periodos`, con tablas de reglas (`incentive_rules`, `collection_factor_rules`, `icv_factor_rules`).
 - **Estados de pago** (`PaymentStatus`): `pagado`, `no_pagado`, `pendiente_confirmar`, `no_corresponde`. Vencimiento por defecto el día 20 del mes si no se especifica otro.
