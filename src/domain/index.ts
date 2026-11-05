@@ -6,6 +6,7 @@ export { calculateGoalProgress } from './goals'
 export { calculatePeriodForDate, calculateDaysUntil, getCalendarMonthRange, MES_PONDERADO_GOAL } from './period'
 export {
   generateOwedMonths,
+  effectiveFirstOwedMonth,
   calculateDaysOverdue,
   defaultDueDateForMonth,
   effectiveDueDate,

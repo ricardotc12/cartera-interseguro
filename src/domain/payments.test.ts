@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { generateOwedMonths, calculateDaysOverdue, defaultDueDateForMonth, effectiveDueDate, getDisplayPaymentStatus } from './payments'
+import {
+  generateOwedMonths,
+  effectiveFirstOwedMonth,
+  calculateDaysOverdue,
+  defaultDueDateForMonth,
+  effectiveDueDate,
+  getDisplayPaymentStatus,
+} from './payments'
 
 describe('generateOwedMonths (sección 19)', () => {
   it('un afiliado que ingresó en junio debe verse de junio a diciembre del año en curso, no solo hasta hoy', () => {
@@ -61,6 +68,28 @@ describe('generateOwedMonths (sección 19)', () => {
 
   it('modalidad anual (stepMonths=12) cruzando fin de año: una sola cuota por año de referencia', () => {
     expect(generateOwedMonths('2025-05-01', '2027-01-01', 12)).toEqual(['2025-05-01', '2026-05-01', '2027-05-01'])
+  })
+})
+
+describe('effectiveFirstOwedMonth (corte de débito automático)', () => {
+  it('emisión el día 1: la primera cuota cae ese mismo mes (01/09 -> corte 20/09)', () => {
+    expect(effectiveFirstOwedMonth('2026-09-01')).toBe('2026-09-01')
+  })
+
+  it('emisión el día 2 en adelante: la primera cuota recién cae el mes siguiente (02/10 -> corte 20/11)', () => {
+    expect(effectiveFirstOwedMonth('2026-10-02')).toBe('2026-11-01')
+  })
+
+  it('emisión a fin de mes también corre al mes siguiente (30/09 -> corte 20/10)', () => {
+    expect(effectiveFirstOwedMonth('2026-09-30')).toBe('2026-10-01')
+  })
+
+  it('cruza el fin de año (02/12 -> corte 20/01 del año siguiente)', () => {
+    expect(effectiveFirstOwedMonth('2026-12-02')).toBe('2027-01-01')
+  })
+
+  it('emisión el día 1 de diciembre no cruza de año (01/12 -> corte 20/12)', () => {
+    expect(effectiveFirstOwedMonth('2026-12-01')).toBe('2026-12-01')
   })
 })
 

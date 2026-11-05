@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { createHookContext } from '@/lib/createHookContext'
-import { generateOwedMonths, defaultDueDateForMonth, modalidadStepMonths } from '@/domain'
+import { generateOwedMonths, defaultDueDateForMonth, effectiveFirstOwedMonth, modalidadStepMonths } from '@/domain'
 import { today } from '@/lib/date'
 import type { Affiliate, AffiliateStatus, CoverageCode, Modalidad, Payment, PaymentStatus, Policy, PolicyCoverage } from '@/types/domain'
 
@@ -160,7 +160,7 @@ function usePaymentsImpl() {
 
     const referenceDate = today()
     const rowsToEnsure = (activePolicies ?? []).flatMap((policy) =>
-      generateOwedMonths(policy.start_date, referenceDate, modalidadStepMonths(policy.modalidad)).map((yearMonth) => ({
+      generateOwedMonths(effectiveFirstOwedMonth(policy.start_date), referenceDate, modalidadStepMonths(policy.modalidad)).map((yearMonth) => ({
         policy_id: policy.id,
         year_month: yearMonth,
         expected_amount: policy.collection_amount,

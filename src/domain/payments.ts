@@ -39,6 +39,25 @@ export function generateOwedMonths(startDate: string, referenceDate: string, ste
 }
 
 /**
+ * Mes efectivo en que arranca la cobranza de una póliza, según el corte de
+ * débito automático que confirmó la asesora: si la póliza se emite el día 1
+ * del mes, esa primera cuota cae el 20 de ese MISMO mes; si se emite del día
+ * 2 en adelante, el corte de ese mes ya pasó y la primera cuota recién cae
+ * el 20 del mes SIGUIENTE (ej. emisión 01/09 → corte 20/09; emisión 02/10 →
+ * corte 20/11). A partir de este mes efectivo, `generateOwedMonths` sigue
+ * generando las cuotas siguientes según la modalidad (mensual/trimestral/
+ * semestral/anual). Devuelve 'YYYY-MM-01'.
+ */
+export function effectiveFirstOwedMonth(startDate: string): string {
+  const day = Number(startDate.slice(8, 10))
+  const [year, month] = startDate.slice(0, 7).split('-').map(Number) as [number, number]
+  if (day <= 1) return `${year}-${String(month).padStart(2, '0')}-01`
+  const nextMonth = month === 12 ? 1 : month + 1
+  const nextYear = month === 12 ? year + 1 : year
+  return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
+}
+
+/**
  * Días de atraso de un pago pendiente respecto a su fecha de vencimiento.
  * Solo tiene sentido si se registró una fecha de vencimiento (sección 20,
  * "preparar para fecha de vencimiento") — no se inventa un vencimiento por
