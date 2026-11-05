@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateCollectionRatio, calculateCollectionFactor } from './collection'
+import { calculateCollectionRatio, calculateCollectionFactor, calculateMoraLevel } from './collection'
 import type { CollectionFactorRule, Payment } from '@/types/domain'
 
 const rules: CollectionFactorRule[] = [
@@ -59,5 +59,36 @@ describe('calculateCollectionRatio (REGLA 4 y REGLA 5)', () => {
 
   it('devuelve null si no hay primas por cobrar (evita dividir por cero)', () => {
     expect(calculateCollectionRatio([])).toBeNull()
+  })
+})
+
+describe('calculateMoraLevel (semáforo de Cobranza)', () => {
+  const referenceDate = '2026-09-04'
+
+  it('cuenta las cuotas vencidas y realmente sin pagar de una póliza', () => {
+    const payments = [
+      payment({ yearMonth: '2026-06-01', status: 'no_pagado', dueDate: '2026-06-20' }),
+      payment({ yearMonth: '2026-07-01', status: 'no_pagado', dueDate: '2026-07-20' }),
+      payment({ yearMonth: '2026-08-01', status: 'no_pagado', dueDate: '2026-08-20' }),
+      payment({ yearMonth: '2026-09-01', status: 'no_pagado', dueDate: '2026-09-20' }), // aún no vence
+    ]
+    expect(calculateMoraLevel(payments, referenceDate)).toBe(3)
+  })
+
+  it('no cuenta "pendiente_confirmar" como mora', () => {
+    const payments = [payment({ yearMonth: '2026-06-01', status: 'pendiente_confirmar', dueDate: '2026-06-20' })]
+    expect(calculateMoraLevel(payments, referenceDate)).toBe(0)
+  })
+
+  it('no cuenta cuotas pagadas ni que no corresponden', () => {
+    const payments = [
+      payment({ yearMonth: '2026-06-01', status: 'pagado', dueDate: '2026-06-20' }),
+      payment({ yearMonth: '2026-07-01', status: 'no_corresponde', dueDate: '2026-07-20' }),
+    ]
+    expect(calculateMoraLevel(payments, referenceDate)).toBe(0)
+  })
+
+  it('devuelve 0 sin pólizas con cuotas pendientes', () => {
+    expect(calculateMoraLevel([], referenceDate)).toBe(0)
   })
 })

@@ -17,7 +17,7 @@ import type { PeriodWithRules } from './usePeriodsAdmin'
 import { useProfile } from './useProfile'
 
 export interface PeriodMetrics {
-  totalAffiliationAmount: number
+  totalEmissionAmount: number
   newPoliciesCount: number
   newAffiliatesCount: number
   vidaEmission: number
@@ -57,7 +57,7 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
       const [policiesResult, paymentsResult] = await Promise.all([
         supabase
           .from('policies')
-          .select('affiliate_id, affiliation_amount')
+          .select('affiliate_id, emission_amount')
           .gte('start_date', period.startDate)
           .lte('start_date', period.endDate),
         // No se filtra por year_month en la consulta: year_month siempre es el día 1 del
@@ -77,9 +77,9 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
       }
 
       const periodPolicies = policiesResult.data ?? []
-      const totalAffiliationAmount = periodPolicies.reduce((sum, p) => sum + p.affiliation_amount, 0)
+      const totalEmissionAmount = periodPolicies.reduce((sum, p) => sum + p.emission_amount, 0)
       const newAffiliatesCount = new Set(periodPolicies.map((p) => p.affiliate_id)).size
-      const vidaEmission = calculateVidaEmission(totalAffiliationAmount, period.vidaEmissionMultiplier)
+      const vidaEmission = calculateVidaEmission(totalEmissionAmount, period.vidaEmissionMultiplier)
       const incentiveTier = findIncentiveTier(vidaEmission, period.incentiveRules)
       const baseIncentive = incentiveTier != null ? calculateBaseIncentive(vidaEmission, incentiveTier) : null
 
@@ -123,7 +123,7 @@ export function usePeriodMetrics(period: PeriodWithRules | null, icvPercentage: 
       }).length
 
       setMetrics({
-        totalAffiliationAmount,
+        totalEmissionAmount,
         newPoliciesCount: periodPolicies.length,
         newAffiliatesCount,
         vidaEmission,

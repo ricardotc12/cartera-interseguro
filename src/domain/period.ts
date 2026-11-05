@@ -23,3 +23,23 @@ export function calculatePeriodForDate<T extends IncentivePeriod>(date: string, 
 export function calculateDaysUntil(targetDate: string, referenceDate: string): number {
   return Math.round((new Date(targetDate).getTime() - new Date(referenceDate).getTime()) / 86_400_000)
 }
+
+/**
+ * Meta fija del "Periodo Mes Ponderado" (control de renovación de contrato):
+ * la Emisión Vida del mes calendario debe llegar a S/ 13,500. Confirmado por
+ * la asesora como un monto fijo, no configurable por período (a diferencia
+ * de `vidaEmissionGoal`).
+ */
+export const MES_PONDERADO_GOAL = 13500
+
+/**
+ * Rango del mes calendario (1 al último día del mes) al que pertenece
+ * `referenceDate` — el "Periodo Mes Ponderado" (distinto del período de
+ * incentivo del agente, que corre del 16 al 15). Ambas fechas ISO 'YYYY-MM-DD'.
+ */
+export function getCalendarMonthRange(referenceDate: string): { startDate: string; endDate: string } {
+  const [year, month] = referenceDate.slice(0, 7).split('-').map(Number) as [number, number]
+  const lastDay = new Date(year, month, 0).getDate()
+  const mm = String(month).padStart(2, '0')
+  return { startDate: `${year}-${mm}-01`, endDate: `${year}-${mm}-${String(lastDay).padStart(2, '0')}` }
+}

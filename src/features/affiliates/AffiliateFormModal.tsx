@@ -2,12 +2,11 @@ import { useState, type FormEvent } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
-import { isValidDni, isValidEmail, isValidAmount } from '@/lib/validators'
-import { formatUsdApprox } from '@/lib/format'
+import { isValidDni, isValidEmail } from '@/lib/validators'
 import { today } from '@/lib/date'
-import { useUsdRate } from '@/hooks/useUsdRate'
 import type { AffiliateInput, AffiliateWithPolicies, PolicyInput } from '@/hooks/useAffiliates'
-import type { AffiliateStatus } from '@/types/domain'
+import type { AffiliateStatus, Modalidad } from '@/types/domain'
+import { CoverageBreakdown, createInitialCoverageRows, coverageRowsToInputs, validateCoverageRows } from './CoverageBreakdown'
 
 const STATUS_OPTIONS: { value: AffiliateStatus; label: string }[] = [
   { value: 'activo', label: 'Activo' },
@@ -27,7 +26,6 @@ interface AffiliateFormModalProps {
 
 export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, onSubmitEdit }: AffiliateFormModalProps) {
   const isEdit = !!affiliate
-  const usdRate = useUsdRate()
 
   const [dni, setDni] = useState(affiliate?.dni ?? '')
   const [firstName, setFirstName] = useState(affiliate?.firstName ?? '')
@@ -39,7 +37,8 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
   const [observations, setObservations] = useState(affiliate?.observations ?? '')
 
   const [policyNumber, setPolicyNumber] = useState('')
-  const [affiliationAmount, setAffiliationAmount] = useState('')
+  const [modalidad, setModalidad] = useState<Modalidad>('mensual')
+  const [coverageRows, setCoverageRows] = useState(() => createInitialCoverageRows())
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -55,8 +54,8 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
 
     if (!isEdit) {
       if (!policyNumber.trim()) errors.policyNumber = 'Ingresa el número de póliza.'
-      const amount = Number(affiliationAmount)
-      if (!affiliationAmount || !isValidAmount(amount)) errors.affiliationAmount = 'Ingresa un monto válido (0 o mayor).'
+      const coverageError = validateCoverageRows(coverageRows)
+      if (coverageError) errors.coverages = coverageError
     }
 
     setFieldErrors(errors)
@@ -84,9 +83,11 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
       ? await onSubmitEdit?.(affiliateInput)
       : await onSubmitCreate?.(affiliateInput, {
           policyNumber: policyNumber.trim(),
-          affiliationAmount: Number(affiliationAmount),
+          modalidad,
           startDate: affiliationDate,
+          cancellationDate: null,
           status,
+          coverages: coverageRowsToInputs(coverageRows),
         })
 
     setSubmitting(false)
@@ -177,7 +178,7 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
         {!isEdit && (
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="mb-3 text-sm font-medium text-slate-700">Póliza inicial</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="mb-4">
               <FormField label="Número de póliza" htmlFor="policyNumber" error={fieldErrors.policyNumber}>
                 <input
                   id="policyNumber"
@@ -186,28 +187,14 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
                   className={fieldClass(!!fieldErrors.policyNumber)}
                 />
               </FormField>
-              <FormField
-                label="Monto de afiliación (S/)"
-                htmlFor="affiliationAmount"
-                error={fieldErrors.affiliationAmount}
-                hint={
-                  <>
-                    {Number(affiliationAmount) > 0 && <>{formatUsdApprox(Number(affiliationAmount), usdRate)} · </>}
-                    La Emisión Vida se calcula automáticamente con el multiplicador del período vigente.
-                  </>
-                }
-              >
-                <input
-                  id="affiliationAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={affiliationAmount}
-                  onChange={(e) => setAffiliationAmount(e.target.value)}
-                  className={fieldClass(!!fieldErrors.affiliationAmount)}
-                />
-              </FormField>
             </div>
+            <CoverageBreakdown
+              rows={coverageRows}
+              onChange={setCoverageRows}
+              modalidad={modalidad}
+              onModalidadChange={setModalidad}
+              error={fieldErrors.coverages}
+            />
           </div>
         )}
 

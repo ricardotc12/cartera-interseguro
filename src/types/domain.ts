@@ -16,13 +16,43 @@ export interface Affiliate {
   updatedAt: string
 }
 
+export type Modalidad = 'mensual' | 'trimestral' | 'semestral' | 'anual'
+
+/**
+ * Las 2 coberturas obligatorias (Fallecimiento + Invalidez Total) siempre van
+ * marcadas; las 5 adicionales son opcionales. Catálogo fijo — no es dato que
+ * el agente pueda agregar/quitar, por eso vive en código y no en una tabla.
+ */
+export type CoverageCode =
+  | 'fallecimiento'
+  | 'invalidez_total_adelanto_capital'
+  | 'fallecimiento_accidente'
+  | 'fallecimiento_accidente_transito'
+  | 'enfermedades_graves_intervenciones'
+  | 'enfermedades_graves_adelanto_capital'
+  | 'invalidez_accidental'
+
+export interface PolicyCoverage {
+  id: string
+  policyId: string
+  coverageCode: CoverageCode
+  amount: number
+}
+
 export interface Policy {
   id: string
   affiliateId: string
   policyNumber: string
-  affiliationAmount: number
+  /** Suma de las coberturas obligatorias — base de Emisión Vida (meta/sueldo). */
+  emissionAmount: number
+  /** Suma de todas las coberturas marcadas — lo que realmente paga el cliente según su modalidad. */
+  collectionAmount: number
+  modalidad: Modalidad
   startDate: string
+  /** Solo se registra cuando la póliza se cancela/anula. */
+  cancellationDate: string | null
   status: AffiliateStatus
+  coverages: PolicyCoverage[]
   createdAt: string
   updatedAt: string
 }

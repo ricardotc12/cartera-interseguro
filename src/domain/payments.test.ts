@@ -54,6 +54,14 @@ describe('generateOwedMonths (sección 19)', () => {
   it('devuelve vacío si la póliza inicia en un año posterior al de la fecha de referencia', () => {
     expect(generateOwedMonths('2027-03-01', '2026-09-04')).toEqual([])
   })
+
+  it('modalidad trimestral (stepMonths=3): genera una cuota cada 3 meses desde la emisión', () => {
+    expect(generateOwedMonths('2026-01-10', '2026-09-04', 3)).toEqual(['2026-01-01', '2026-04-01', '2026-07-01', '2026-10-01'])
+  })
+
+  it('modalidad anual (stepMonths=12) cruzando fin de año: una sola cuota por año de referencia', () => {
+    expect(generateOwedMonths('2025-05-01', '2027-01-01', 12)).toEqual(['2025-05-01', '2026-05-01', '2027-05-01'])
+  })
 })
 
 describe('calculateDaysOverdue (sección 20)', () => {

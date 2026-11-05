@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findNextTier, findRangeMatch } from './rangeRules'
+import { findLowestTier, findNextTier, findRangeMatch } from './rangeRules'
 import type { CollectionFactorRule } from '@/types/domain'
 
 const rules: CollectionFactorRule[] = [
@@ -40,5 +40,16 @@ describe('findRangeMatch', () => {
 
   it('devuelve null con una lista de reglas vacía, sin inventar un tramo', () => {
     expect(findRangeMatch(50, [])).toBeNull()
+  })
+})
+
+describe('findLowestTier (primera banda para el Bono de Recaudo)', () => {
+  it('encuentra el tramo con el min más chico, sin importar el orden del array', () => {
+    const shuffled = [rules[2]!, rules[0]!, rules[4]!, rules[1]!, rules[3]!]
+    expect(findLowestTier(shuffled)?.min).toBe(0)
+  })
+
+  it('devuelve null con una lista vacía', () => {
+    expect(findLowestTier([])).toBeNull()
   })
 })

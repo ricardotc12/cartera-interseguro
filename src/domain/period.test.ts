@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculatePeriodForDate, calculateDaysUntil } from './period'
+import { calculatePeriodForDate, calculateDaysUntil, getCalendarMonthRange } from './period'
 import type { IncentivePeriod } from '@/types/domain'
 
 const basePeriod = (overrides: Partial<IncentivePeriod>): IncentivePeriod => ({
@@ -53,5 +53,19 @@ describe('calculateDaysUntil (sección 45)', () => {
 
   it('negativo cuando la fecha objetivo ya pasó', () => {
     expect(calculateDaysUntil('2026-09-15', '2026-09-20')).toBe(-5)
+  })
+})
+
+describe('getCalendarMonthRange (Periodo Mes Ponderado)', () => {
+  it('va del día 1 al último día del mes (31 días)', () => {
+    expect(getCalendarMonthRange('2026-01-15')).toEqual({ startDate: '2026-01-01', endDate: '2026-01-31' })
+  })
+
+  it('respeta meses de 30 días', () => {
+    expect(getCalendarMonthRange('2026-04-01')).toEqual({ startDate: '2026-04-01', endDate: '2026-04-30' })
+  })
+
+  it('respeta febrero bisiesto', () => {
+    expect(getCalendarMonthRange('2028-02-10')).toEqual({ startDate: '2028-02-01', endDate: '2028-02-29' })
   })
 })

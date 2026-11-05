@@ -123,7 +123,7 @@ export function DashboardPage() {
         <IndicatorCard label="Emisión Vida" value={formatCurrency(metrics.vidaEmission)} icon={TrendingUp} tone="primary" />
         <IndicatorCard
           label="Monto real de pólizas"
-          value={formatCurrency(affiliates.flatMap((a) => a.policies).reduce((sum, p) => sum + p.affiliationAmount, 0))}
+          value={formatCurrency(affiliates.flatMap((a) => a.policies).reduce((sum, p) => sum + p.collectionAmount, 0))}
           hint="Toca para ver el detalle"
           icon={Banknote}
           tone="success"

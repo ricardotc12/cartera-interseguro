@@ -36,7 +36,7 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
     async function load() {
       setLoading(true)
       const [policiesResult, paymentsResult] = await Promise.all([
-        supabase.from('policies').select('affiliation_amount, start_date'),
+        supabase.from('policies').select('emission_amount, start_date'),
         supabase.from('payments').select('year_month, due_date, expected_amount, paid_amount, is_rescheduled, status'),
       ])
 
@@ -54,8 +54,8 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
         .sort((a, b) => a.startDate.localeCompare(b.startDate))
         .map((period) => {
           const periodPolicies = policies.filter((p) => p.start_date >= period.startDate && p.start_date <= period.endDate)
-          const totalAffiliationAmount = periodPolicies.reduce((sum, p) => sum + p.affiliation_amount, 0)
-          const vidaEmission = calculateVidaEmission(totalAffiliationAmount, period.vidaEmissionMultiplier)
+          const totalEmissionAmount = periodPolicies.reduce((sum, p) => sum + p.emission_amount, 0)
+          const vidaEmission = calculateVidaEmission(totalEmissionAmount, period.vidaEmissionMultiplier)
 
           // year_month siempre es el día 1 del mes de cobranza, pero el período corre del
           // 16 al 15 — hay que comparar contra la fecha de vencimiento real (el 20), no

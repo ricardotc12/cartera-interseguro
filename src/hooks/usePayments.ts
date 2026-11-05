@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { createHookContext } from '@/lib/createHookContext'
-import { generateOwedMonths, defaultDueDateForMonth } from '@/domain'
+import { generateOwedMonths, defaultDueDateForMonth, modalidadStepMonths } from '@/domain'
 import { today } from '@/lib/date'
-import type { Affiliate, AffiliateStatus, Payment, PaymentStatus, Policy } from '@/types/domain'
+import type { Affiliate, AffiliateStatus, CoverageCode, Modalidad, Payment, PaymentStatus, Policy, PolicyCoverage } from '@/types/domain'
 
 export interface PaymentWithContext extends Payment {
   policy: Policy
@@ -23,15 +23,26 @@ export interface PaymentUpdateInput {
   observation: string | null
 }
 
+interface PolicyCoverageRow {
+  id: string
+  policy_id: string
+  coverage_code: CoverageCode
+  amount: number
+}
+
 interface PolicyRow {
   id: string
   affiliate_id: string
   policy_number: string
-  affiliation_amount: number
+  emission_amount: number
+  collection_amount: number
+  modalidad: Modalidad
   start_date: string
+  cancellation_date: string | null
   status: AffiliateStatus
   created_at: string
   updated_at: string
+  policy_coverages?: PolicyCoverageRow[]
 }
 
 interface AffiliateRow {
@@ -80,14 +91,22 @@ function mapAffiliate(row: AffiliateRow): Affiliate {
   }
 }
 
+function mapPolicyCoverage(row: PolicyCoverageRow): PolicyCoverage {
+  return { id: row.id, policyId: row.policy_id, coverageCode: row.coverage_code, amount: row.amount }
+}
+
 function mapPolicy(row: PolicyRow): Policy {
   return {
     id: row.id,
     affiliateId: row.affiliate_id,
     policyNumber: row.policy_number,
-    affiliationAmount: row.affiliation_amount,
+    emissionAmount: row.emission_amount,
+    collectionAmount: row.collection_amount,
+    modalidad: row.modalidad,
     startDate: row.start_date,
+    cancellationDate: row.cancellation_date,
     status: row.status,
+    coverages: (row.policy_coverages ?? []).map(mapPolicyCoverage),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -126,10 +145,11 @@ function usePaymentsImpl() {
     }
     setLoading(true)
 
-    // 1. Genera las cuotas mensuales que aún no existan para pólizas vigentes.
+    // 1. Genera las cuotas de cobranza que aún no existan para pólizas vigentes
+    //    (cada cuántos meses le toca según su modalidad: mensual/trimestral/semestral/anual).
     const { data: activePolicies, error: policiesError } = await supabase
       .from('policies')
-      .select('id, affiliation_amount, start_date')
+      .select('id, collection_amount, start_date, modalidad')
       .in('status', ['activo', 'pendiente'])
 
     if (policiesError) {
@@ -140,10 +160,10 @@ function usePaymentsImpl() {
 
     const referenceDate = today()
     const rowsToEnsure = (activePolicies ?? []).flatMap((policy) =>
-      generateOwedMonths(policy.start_date, referenceDate).map((yearMonth) => ({
+      generateOwedMonths(policy.start_date, referenceDate, modalidadStepMonths(policy.modalidad)).map((yearMonth) => ({
         policy_id: policy.id,
         year_month: yearMonth,
-        expected_amount: policy.affiliation_amount,
+        expected_amount: policy.collection_amount,
         status: 'no_pagado' as PaymentStatus,
         is_rescheduled: false,
         due_date: defaultDueDateForMonth(yearMonth),
@@ -165,7 +185,7 @@ function usePaymentsImpl() {
     // 2. Carga todos los pagos (de cualquier póliza, incluidas inactivas/canceladas) para su consulta.
     const { data, error: fetchError } = await supabase
       .from('payments')
-      .select('*, policies(*, affiliates(*))')
+      .select('*, policies(*, policy_coverages(*), affiliates(*))')
       .order('year_month', { ascending: false })
 
     if (fetchError) {

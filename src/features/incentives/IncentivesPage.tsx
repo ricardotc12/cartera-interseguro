@@ -49,12 +49,12 @@ export function IncentivesPage() {
       <div>
         <h2 className="text-lg font-semibold text-slate-900">{currentPeriod.name}</h2>
         <p className="text-sm text-slate-500">
-          {metrics.newPoliciesCount} póliza(s) nueva(s) en este período · Monto total afiliación {formatCurrency(metrics.totalAffiliationAmount)}
+          {metrics.newPoliciesCount} póliza(s) nueva(s) en este período · Monto total Emisión {formatCurrency(metrics.totalEmissionAmount)}
         </p>
       </div>
 
       <div className="mx-auto max-w-sm space-y-2">
-        <Step label="Emisión Vida" value={formatCurrency(metrics.vidaEmission)} hint={`Monto afiliación × ${currentPeriod.vidaEmissionMultiplier}`} />
+        <Step label="Emisión Vida" value={formatCurrency(metrics.vidaEmission)} hint={`Monto de Emisión × ${currentPeriod.vidaEmissionMultiplier}`} />
         <Arrow />
         <Step
           label="Tramo de Incentivo"

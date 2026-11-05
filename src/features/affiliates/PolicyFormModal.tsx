@@ -2,12 +2,11 @@ import { useState, type FormEvent } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
-import { isValidAmount } from '@/lib/validators'
-import { formatUsdApprox } from '@/lib/format'
 import { today } from '@/lib/date'
-import { useUsdRate } from '@/hooks/useUsdRate'
+import { calculateDaysActive } from '@/domain'
 import type { PolicyInput } from '@/hooks/useAffiliates'
-import type { AffiliateStatus, Policy } from '@/types/domain'
+import type { AffiliateStatus, Modalidad, Policy } from '@/types/domain'
+import { CoverageBreakdown, createInitialCoverageRows, coverageRowsToInputs, validateCoverageRows } from './CoverageBreakdown'
 
 const STATUS_OPTIONS: { value: AffiliateStatus; label: string }[] = [
   { value: 'activo', label: 'Activo' },
@@ -25,23 +24,27 @@ interface PolicyFormModalProps {
 
 export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormModalProps) {
   const isEdit = !!policy
-  const usdRate = useUsdRate()
 
   const [policyNumber, setPolicyNumber] = useState(policy?.policyNumber ?? '')
-  const [affiliationAmount, setAffiliationAmount] = useState(policy ? String(policy.affiliationAmount) : '')
   const [startDate, setStartDate] = useState(policy?.startDate ?? today())
   const [status, setStatus] = useState<AffiliateStatus>(policy?.status ?? 'activo')
+  const [cancellationDate, setCancellationDate] = useState(policy?.cancellationDate ?? '')
+  const [modalidad, setModalidad] = useState<Modalidad>(policy?.modalidad ?? 'mensual')
+  const [coverageRows, setCoverageRows] = useState(() => createInitialCoverageRows(policy?.coverages))
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const daysActive = calculateDaysActive(startDate, cancellationDate || null)
+
   function validate(): boolean {
     const errors: Record<string, string> = {}
     if (!policyNumber.trim()) errors.policyNumber = 'Ingresa el número de póliza.'
-    const amount = Number(affiliationAmount)
-    if (!affiliationAmount || !isValidAmount(amount)) errors.affiliationAmount = 'Ingresa un monto válido (0 o mayor).'
-    if (!startDate) errors.startDate = 'Ingresa la fecha de inicio.'
+    if (!startDate) errors.startDate = 'Ingresa la fecha de emisión.'
+    const coverageError = validateCoverageRows(coverageRows)
+    if (coverageError) errors.coverages = coverageError
+    if (status === 'cancelado' && !cancellationDate) errors.cancellationDate = 'Ingresa la fecha de cancelación.'
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -54,9 +57,11 @@ export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormM
     setSubmitting(true)
     const result = await onSubmit({
       policyNumber: policyNumber.trim(),
-      affiliationAmount: Number(affiliationAmount),
+      modalidad,
       startDate,
+      cancellationDate: status === 'cancelado' ? cancellationDate : null,
       status,
+      coverages: coverageRowsToInputs(coverageRows),
     })
     setSubmitting(false)
 
@@ -78,23 +83,16 @@ export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormM
             className={fieldClass(!!fieldErrors.policyNumber)}
           />
         </FormField>
-        <FormField
-          label="Monto de afiliación (S/)"
-          htmlFor="affiliationAmount"
-          error={fieldErrors.affiliationAmount}
-          hint={Number(affiliationAmount) > 0 ? formatUsdApprox(Number(affiliationAmount), usdRate) : undefined}
-        >
-          <input
-            id="affiliationAmount"
-            type="number"
-            min="0"
-            step="0.01"
-            value={affiliationAmount}
-            onChange={(e) => setAffiliationAmount(e.target.value)}
-            className={fieldClass(!!fieldErrors.affiliationAmount)}
-          />
-        </FormField>
-        <FormField label="Fecha de inicio" htmlFor="startDate" error={fieldErrors.startDate}>
+
+        <CoverageBreakdown
+          rows={coverageRows}
+          onChange={setCoverageRows}
+          modalidad={modalidad}
+          onModalidadChange={setModalidad}
+          error={fieldErrors.coverages}
+        />
+
+        <FormField label="Fecha de Emisión" htmlFor="startDate" error={fieldErrors.startDate}>
           <input
             id="startDate"
             type="date"
@@ -112,6 +110,24 @@ export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormM
             ))}
           </select>
         </FormField>
+
+        {status === 'cancelado' && (
+          <FormField
+            label="Fecha de cancelación"
+            htmlFor="cancellationDate"
+            error={fieldErrors.cancellationDate}
+            hint={daysActive != null ? `Estuvo vigente ${daysActive} días.` : undefined}
+          >
+            <input
+              id="cancellationDate"
+              type="date"
+              value={cancellationDate}
+              min={startDate}
+              onChange={(e) => setCancellationDate(e.target.value)}
+              className={fieldClass(!!fieldErrors.cancellationDate)}
+            />
+          </FormField>
+        )}
 
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
 

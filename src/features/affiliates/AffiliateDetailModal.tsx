@@ -3,13 +3,23 @@ import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { formatCurrency, formatDate, formatUsdApprox } from '@/lib/format'
-import { calculatePeriodForDate, calculateVidaEmission } from '@/domain'
-import { useUsdRate } from '@/hooks/useUsdRate'
+import { formatCurrency, formatDate } from '@/lib/format'
+import { calculateDaysActive, calculatePeriodForDate, calculateVidaEmission, COVERAGES } from '@/domain'
 import type { IncentivePeriod, Policy } from '@/types/domain'
 import type { AffiliateWithPolicies, PolicyInput } from '@/hooks/useAffiliates'
 import { StatusBadge } from './StatusBadge'
 import { PolicyFormModal } from './PolicyFormModal'
+
+const MODALIDAD_LABEL: Record<Policy['modalidad'], string> = {
+  mensual: 'Mensual',
+  trimestral: 'Trimestral',
+  semestral: 'Semestral',
+  anual: 'Anual',
+}
+
+function coverageLabel(code: string): string {
+  return COVERAGES.find((c) => c.code === code)?.label ?? code
+}
 
 interface AffiliateDetailModalProps {
   open: boolean
@@ -26,7 +36,7 @@ function VidaEmissionCell({ policy, periods }: { policy: Policy; periods: Incent
   if (!period) {
     return <span className="text-xs text-amber-600">Sin período configurado para esta fecha</span>
   }
-  const vidaEmission = calculateVidaEmission(policy.affiliationAmount, period.vidaEmissionMultiplier)
+  const vidaEmission = calculateVidaEmission(policy.emissionAmount, period.vidaEmissionMultiplier)
   return <span className="font-medium text-slate-700">{formatCurrency(vidaEmission)}</span>
 }
 
@@ -42,7 +52,6 @@ export function AffiliateDetailModal({
   const [policyModalOpen, setPolicyModalOpen] = useState(false)
   const [editingPolicy, setEditingPolicy] = useState<Policy | undefined>(undefined)
   const [deletingPolicy, setDeletingPolicy] = useState<Policy | undefined>(undefined)
-  const usdRate = useUsdRate()
 
   return (
     <Modal open={open} onClose={onClose} title={`${affiliate.firstName} ${affiliate.lastName}`}>
@@ -98,16 +107,31 @@ export function AffiliateDetailModal({
               {affiliate.policies.map((policy) => (
                 <li key={policy.id} className="rounded-lg border border-slate-200 p-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">Póliza {policy.policyNumber}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900">
+                        Póliza {policy.policyNumber}{' '}
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-normal text-slate-500">
+                          {MODALIDAD_LABEL[policy.modalidad]}
+                        </span>
+                      </p>
                       <p className="text-xs text-slate-500">
-                        Monto: {formatCurrency(policy.affiliationAmount)}{' '}
-                        <span className="text-slate-400">({formatUsdApprox(policy.affiliationAmount, usdRate)})</span> · Inicio:{' '}
-                        {formatDate(policy.startDate)}
+                        Monto de Emisión: {formatCurrency(policy.emissionAmount)} · Monto de Cobranza:{' '}
+                        {formatCurrency(policy.collectionAmount)} · Emisión: {formatDate(policy.startDate)}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
                         Emisión Vida: <VidaEmissionCell policy={policy} periods={periods} />
                       </p>
+                      {policy.coverages.length > 0 && (
+                        <p className="mt-1 text-xs text-slate-400">
+                          Coberturas: {policy.coverages.map((c) => `${coverageLabel(c.coverageCode)} (${formatCurrency(c.amount)})`).join(', ')}
+                        </p>
+                      )}
+                      {policy.status === 'cancelado' && policy.cancellationDate && (
+                        <p className="mt-1 text-xs font-medium text-red-600">
+                          Cancelada el {formatDate(policy.cancellationDate)} — estuvo vigente{' '}
+                          {calculateDaysActive(policy.startDate, policy.cancellationDate)} días
+                        </p>
+                      )}
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <StatusBadge status={policy.status} />

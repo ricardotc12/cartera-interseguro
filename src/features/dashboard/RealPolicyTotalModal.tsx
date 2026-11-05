@@ -20,7 +20,7 @@ export function RealPolicyTotalModal({ open, onClose, affiliates }: RealPolicyTo
   if (!open) return null
 
   const allPolicies = affiliates.flatMap((a) => a.policies)
-  const total = allPolicies.reduce((sum, p) => sum + p.affiliationAmount, 0)
+  const total = allPolicies.reduce((sum, p) => sum + p.collectionAmount, 0)
   const average = allPolicies.length > 0 ? total / allPolicies.length : 0
 
   return (

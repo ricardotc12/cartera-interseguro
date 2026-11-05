@@ -4,6 +4,15 @@
 export type PeriodStatusDb = 'draft' | 'active' | 'closed'
 export type AffiliateStatusDb = 'activo' | 'pendiente' | 'inactivo' | 'cancelado'
 export type PaymentStatusDb = 'pagado' | 'no_pagado' | 'pendiente_confirmar' | 'no_corresponde'
+export type ModalidadDb = 'mensual' | 'trimestral' | 'semestral' | 'anual'
+export type CoverageCodeDb =
+  | 'fallecimiento'
+  | 'invalidez_total_adelanto_capital'
+  | 'fallecimiento_accidente'
+  | 'fallecimiento_accidente_transito'
+  | 'enfermedades_graves_intervenciones'
+  | 'enfermedades_graves_adelanto_capital'
+  | 'invalidez_accidental'
 
 type IncentivePeriodRow = {
   id: string
@@ -83,9 +92,23 @@ type PolicyRow = {
   id: string
   affiliate_id: string
   policy_number: string
-  affiliation_amount: number
+  emission_amount: number
+  collection_amount: number
+  modalidad: ModalidadDb
   start_date: string
+  cancellation_date: string | null
   status: AffiliateStatusDb
+  created_at: string
+  updated_at: string
+  created_by: string
+  updated_by: string | null
+}
+
+type PolicyCoverageRow = {
+  id: string
+  policy_id: string
+  coverage_code: CoverageCodeDb
+  amount: number
   created_at: string
   updated_at: string
   created_by: string
@@ -203,10 +226,24 @@ export interface Database {
           role: string
           show_collection_ratio: boolean
           show_icv: boolean
+          interseguro_start_date: string | null
           created_at: string
         }
-        Insert: { id: string; full_name?: string | null; role?: string; show_collection_ratio?: boolean; show_icv?: boolean }
-        Update: { full_name?: string | null; role?: string; show_collection_ratio?: boolean; show_icv?: boolean }
+        Insert: {
+          id: string
+          full_name?: string | null
+          role?: string
+          show_collection_ratio?: boolean
+          show_icv?: boolean
+          interseguro_start_date?: string | null
+        }
+        Update: {
+          full_name?: string | null
+          role?: string
+          show_collection_ratio?: boolean
+          show_icv?: boolean
+          interseguro_start_date?: string | null
+        }
         Relationships: []
       }
       incentive_periods: {
@@ -259,6 +296,19 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: 'payments_policy_id_fkey'
+            columns: ['policy_id']
+            referencedRelation: 'policies'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      policy_coverages: {
+        Row: PolicyCoverageRow
+        Insert: WritableInsert<PolicyCoverageRow, 'id' | 'created_at' | 'updated_at' | 'updated_by'>
+        Update: WritableUpdate<PolicyCoverageRow, 'id' | 'created_at' | 'updated_at'>
+        Relationships: [
+          {
+            foreignKeyName: 'policy_coverages_policy_id_fkey'
             columns: ['policy_id']
             referencedRelation: 'policies'
             referencedColumns: ['id']

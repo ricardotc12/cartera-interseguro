@@ -8,6 +8,8 @@ export interface Profile {
   fullName: string | null
   showCollectionRatio: boolean
   showIcv: boolean
+  /** Fecha de ingreso del agente a Interseguro — base de la antigüedad para el Bono de Recaudo. */
+  interseguroStartDate: string | null
 }
 
 function useProfileImpl() {
@@ -23,13 +25,19 @@ function useProfileImpl() {
     setLoading(true)
     const { data } = await supabase
       .from('profiles')
-      .select('id, full_name, show_collection_ratio, show_icv')
+      .select('id, full_name, show_collection_ratio, show_icv, interseguro_start_date')
       .eq('id', user.id)
       .maybeSingle()
     setProfile(
       data
-        ? { id: data.id, fullName: data.full_name, showCollectionRatio: data.show_collection_ratio, showIcv: data.show_icv }
-        : { id: user.id, fullName: null, showCollectionRatio: false, showIcv: false },
+        ? {
+            id: data.id,
+            fullName: data.full_name,
+            showCollectionRatio: data.show_collection_ratio,
+            showIcv: data.show_icv,
+            interseguroStartDate: data.interseguro_start_date,
+          }
+        : { id: user.id, fullName: null, showCollectionRatio: false, showIcv: false, interseguroStartDate: null },
     )
     setLoading(false)
   }, [user])
@@ -62,7 +70,15 @@ function useProfileImpl() {
     return { error: null }
   }
 
-  return { profile, loading, setFullName, setShowCollectionRatio, setShowIcv }
+  async function setInterseguroStartDate(date: string) {
+    if (!user) return { error: 'Debes iniciar sesión.' }
+    const { error } = await supabase.from('profiles').update({ interseguro_start_date: date || null }).eq('id', user.id)
+    if (error) return { error: error.message }
+    await refresh()
+    return { error: null }
+  }
+
+  return { profile, loading, setFullName, setShowCollectionRatio, setShowIcv, setInterseguroStartDate }
 }
 
 export const [ProfileProvider, useProfile] = createHookContext(useProfileImpl, 'useProfile')

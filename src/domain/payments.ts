@@ -9,8 +9,13 @@ import type { PaymentStatus } from '@/types/domain'
  * cuándo se afilió. Al empezar un año nuevo, la fecha de referencia cae en
  * ese año y se generan sus 12 meses. Devuelve fechas ISO del primer día de
  * cada mes ('YYYY-MM-01').
+ *
+ * `stepMonths` es cada cuántos meses le toca cobrar según la modalidad de la
+ * póliza (1 mensual, 3 trimestral, 6 semestral, 12 anual — ver
+ * `modalidadStepMonths`): la cuota de cobranza no se genera todos los meses,
+ * solo cada `stepMonths` meses contados desde el mes de la fecha de inicio.
  */
-export function generateOwedMonths(startDate: string, referenceDate: string): string[] {
+export function generateOwedMonths(startDate: string, referenceDate: string, stepMonths = 1): string[] {
   const [startYear, startMonth] = startDate.slice(0, 7).split('-').map(Number) as [number, number]
   const [endYear] = referenceDate.slice(0, 7).split('-').map(Number) as [number, number]
   const endMonth = 12
@@ -23,9 +28,9 @@ export function generateOwedMonths(startDate: string, referenceDate: string): st
 
   while (year < endYear || (year === endYear && month <= endMonth)) {
     months.push(`${year}-${String(month).padStart(2, '0')}-01`)
-    month += 1
-    if (month > 12) {
-      month = 1
+    month += stepMonths
+    while (month > 12) {
+      month -= 12
       year += 1
     }
   }

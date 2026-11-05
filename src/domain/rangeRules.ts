@@ -21,3 +21,12 @@ export function findNextTier<T extends RangeRule>(value: number, rules: T[]): T 
   if (currentIndex === -1 || currentIndex === sorted.length - 1) return null
   return sorted[currentIndex + 1] ?? null
 }
+
+/**
+ * El tramo más bajo configurado (menor `min`) — la "primera banda" que la
+ * Emisión Vida del período debe alcanzar para calificar al Bono de Recaudo.
+ * Null si no hay tramos configurados.
+ */
+export function findLowestTier<T extends RangeRule>(rules: T[]): T | null {
+  return rules.reduce<T | null>((lowest, r) => (lowest == null || r.min < lowest.min ? r : lowest), null)
+}
