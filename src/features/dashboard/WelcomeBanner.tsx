@@ -28,24 +28,6 @@ export function WelcomeBanner() {
     setEditing(false)
   }
 
-  if (!profile.fullName && !editing) {
-    return (
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Hola 👋</h1>
-          <p className="text-sm text-slate-500">Aquí están tus avances de {currentMonthLabel()}.</p>
-        </div>
-        <button
-          onClick={() => setEditing(true)}
-          className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Agregar mi nombre
-        </button>
-      </div>
-    )
-  }
-
   if (editing) {
     return (
       <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
@@ -67,9 +49,21 @@ export function WelcomeBanner() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900">Hola, {profile.fullName} 👋</h1>
-      <p className="text-sm text-slate-500">Aquí están tus avances de {currentMonthLabel()}.</p>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">{profile.fullName ? `Hola, ${profile.fullName}` : 'Hola'} 👋</h1>
+        <p className="text-sm text-slate-500">Aquí están tus avances de {currentMonthLabel()}.</p>
+      </div>
+      <button
+        onClick={() => {
+          setName(profile.fullName ?? '')
+          setEditing(true)
+        }}
+        className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        {profile.fullName ? 'Editar nombre' : 'Agregar mi nombre'}
+      </button>
     </div>
   )
 }
