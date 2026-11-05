@@ -18,11 +18,11 @@ const MODALIDAD_OPTIONS: { value: Modalidad; label: string }[] = [
   { value: 'anual', label: 'Anual' },
 ]
 
-/** Arranca el checklist: las 2 coberturas obligatorias siempre marcadas; en edición, precarga montos/marcas existentes. */
+/** Arranca el checklist sin nada premarcado (ni siquiera las obligatorias*, el agente decide); en edición, precarga montos/marcas existentes. */
 export function createInitialCoverageRows(existing?: PolicyCoverage[]): CoverageRowState[] {
-  return COVERAGES.map(({ code, mandatory }) => {
+  return COVERAGES.map(({ code }) => {
     const current = existing?.find((c) => c.coverageCode === code)
-    return { code, checked: mandatory || !!current, amount: current ? String(current.amount) : '' }
+    return { code, checked: !!current, amount: current ? String(current.amount) : '' }
   })
 }
 
@@ -87,13 +87,16 @@ export function CoverageBreakdown({ rows, onChange, modalidad, onModalidadChange
                 <input
                   type="checkbox"
                   checked={row.checked}
-                  disabled={def.mandatory}
                   onChange={(e) => updateRow(row.code, { checked: e.target.checked, amount: e.target.checked ? row.amount : '' })}
-                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 disabled:opacity-60"
+                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600"
                 />
-                <span className={`min-w-0 flex-1 text-sm ${def.mandatory ? 'font-medium text-slate-800' : 'text-slate-700'}`}>
+                <span className="min-w-0 flex-1 text-sm text-slate-700">
                   {def.label}
-                  {def.mandatory && <span className="ml-1 text-xs text-slate-400">(obligatoria)</span>}
+                  {def.mandatory && (
+                    <span className="ml-0.5 text-red-500" title="Cobertura obligatoria">
+                      *
+                    </span>
+                  )}
                 </span>
                 <input
                   type="number"
@@ -109,6 +112,7 @@ export function CoverageBreakdown({ rows, onChange, modalidad, onModalidadChange
             )
           })}
         </div>
+        <p className="mt-1 text-xs text-slate-400">* Coberturas obligatorias del producto.</p>
         {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
       </div>
 
