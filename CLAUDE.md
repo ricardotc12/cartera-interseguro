@@ -75,4 +75,4 @@ npm run lint    # ESLint
 npm run build   # build de producción (incluye tsc -b)
 ```
 
-Migraciones en `supabase/migrations/`, numeradas y aplicadas en orden (última: `0017`). El usuario las corre manualmente en el SQL Editor de Supabase — nunca asumir que ya están aplicadas sin que él lo confirme.
+Migraciones en `supabase/migrations/`, numeradas y aplicadas en orden (última: `0018`). El usuario las corre manualmente en el SQL Editor de Supabase — nunca asumir que ya están aplicadas sin que él lo confirme.
