@@ -9,7 +9,7 @@ import { usePayments } from '@/hooks/usePayments'
 import { useProfile } from '@/hooks/useProfile'
 import { useCollectionAlerts } from '@/hooks/useCollectionAlerts'
 import { useContactReminders } from '@/hooks/useContactReminders'
-import { calculatePeriodForDate, calculateGoalProgress, calculateDaysUntil } from '@/domain'
+import { calculatePeriodForDate, calculateGoalProgress, calculateDaysUntil, calculateVidaEmission, getCalendarMonthRange, MES_PONDERADO_GOAL } from '@/domain'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -25,6 +25,7 @@ import { CollectionAlertsModal } from './CollectionAlertsModal'
 import { ContactRemindersModal } from '@/features/contacts/ContactRemindersModal'
 import { QuoteExpiryRemindersModal } from '@/features/contacts/QuoteExpiryRemindersModal'
 import { RealPolicyTotalModal } from './RealPolicyTotalModal'
+import { RecaudoBonusCard } from './RecaudoBonusCard'
 import { WelcomeBanner } from './WelcomeBanner'
 import { Skeleton, KpiGridSkeleton } from '@/components/ui/Skeleton'
 
@@ -38,7 +39,7 @@ export function DashboardPage() {
   const { history, loading: historyLoading } = usePeriodsHistory(periods)
   const { affiliates, loading: affiliatesLoading } = useAffiliates()
   const { payments, loading: paymentsLoading } = usePayments()
-  const { profile, loading: profileLoading } = useProfile()
+  const { profile, loading: profileLoading, setInterseguroStartDate } = useProfile()
   const { total: collectionAlertsTotal, loading: collectionAlertsLoading } = useCollectionAlerts()
   const { total: contactRemindersTotal, loading: contactRemindersLoading } = useContactReminders()
 
@@ -71,6 +72,17 @@ export function DashboardPage() {
 
   const activeAffiliates = affiliates.filter((a) => a.status === 'activo').length
   const goalProgress = calculateGoalProgress(currentPeriod.vidaEmissionGoal, metrics.vidaEmission)
+
+  // Periodo Mes Ponderado: calendario (1 al último día del mes), distinto del período de
+  // incentivo del agente (16 al 15) — controla la renovación de contrato (REGLA confirmada:
+  // mínimo fijo de S/ 13,500 de Emisión Vida de las pólizas emitidas ese mes calendario).
+  const weightedMonthRange = getCalendarMonthRange(today())
+  const weightedMonthEmission = affiliates
+    .flatMap((a) => a.policies)
+    .filter((p) => p.startDate >= weightedMonthRange.startDate && p.startDate <= weightedMonthRange.endDate)
+    .reduce((sum, p) => sum + calculateVidaEmission(p.emissionAmount, currentPeriod.vidaEmissionMultiplier), 0)
+  const weightedMonthProgress = calculateGoalProgress(MES_PONDERADO_GOAL, weightedMonthEmission)
+
   const periodDaysLeft = calculateDaysUntil(currentPeriod.endDate, today())
   const periodEndingSoon = periodDaysLeft >= 0 && periodDaysLeft <= PERIOD_ENDING_WARNING_DAYS
   const collectionAlertsShowing = !collectionAlertsLoading && !periodEndingSoon && collectionAlertsTotal > 0
@@ -89,7 +101,7 @@ export function DashboardPage() {
         <div className="bg-gradient-to-r from-primary-700 to-primary-600 px-4 py-4 text-white sm:px-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-primary-100">Período vigente</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-primary-100">Periodo Incentivo Agente</p>
               <p className="text-lg font-semibold">{currentPeriod.name}</p>
               <p className="text-sm text-primary-100">
                 {formatDate(currentPeriod.startDate)} — {formatDate(currentPeriod.endDate)}
@@ -99,14 +111,27 @@ export function DashboardPage() {
               {PERIOD_STATUS_LABEL[currentPeriod.status]}
             </Badge>
           </div>
+          <div className="mt-3 border-t border-white/20 pt-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-primary-100">Periodo Mes Ponderado</p>
+            <p className="text-sm text-primary-100">
+              {formatDate(weightedMonthRange.startDate)} — {formatDate(weightedMonthRange.endDate)}
+            </p>
+          </div>
         </div>
-        <CardBody>
+        <CardBody className="space-y-4">
           <ProgressBar
             value={goalProgress.compliancePct}
             tone={goalProgress.compliancePct >= 1 ? 'success' : 'secondary'}
-            label="Meta Emisión Vida"
+            label="Meta Emisión Vida (Incentivo Agente)"
             current={formatCurrency(metrics.vidaEmission)}
             target={formatCurrency(currentPeriod.vidaEmissionGoal)}
+          />
+          <ProgressBar
+            value={weightedMonthProgress.compliancePct}
+            tone={weightedMonthProgress.compliancePct >= 1 ? 'success' : 'secondary'}
+            label="Meta Mes Ponderado (renovación de contrato)"
+            current={formatCurrency(weightedMonthEmission)}
+            target={formatCurrency(MES_PONDERADO_GOAL)}
           />
         </CardBody>
       </Card>
@@ -173,6 +198,16 @@ export function DashboardPage() {
         <IndicatorCard label="Pagos realizados" value={String(metrics.paidPaymentsCount)} icon={CheckCircle2} tone="success" />
         <IndicatorCard label="Pagos pendientes" value={String(metrics.pendingPaymentsCount)} icon={Clock} tone="warning" />
       </div>
+
+      {profile && (
+        <RecaudoBonusCard
+          profile={profile}
+          setInterseguroStartDate={setInterseguroStartDate}
+          currentPeriod={currentPeriod}
+          vidaEmission={metrics.vidaEmission}
+          payments={payments}
+        />
+      )}
 
       <PeriodsHistoryCharts history={history} />
 
