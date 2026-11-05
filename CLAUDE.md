@@ -46,11 +46,19 @@ Las alertas dentro del propio Dashboard (modales al entrar, campanita de la barr
 
 ## Reglas de negocio ya implementadas (resumen)
 
-- **Emisión Vida** = monto real de afiliación × multiplicador del período vigente (hoy ×10) — usado para medir metas e incentivos de Interseguro. Es DISTINTO del "monto real de pólizas" (suma sin multiplicar, lo que de verdad pagan los afiliados — tarjeta/modal propios en el Dashboard).
+- **Emisión Vida** = Monto de Emisión × multiplicador del período vigente (hoy ×10) — usado para medir metas e incentivos de Interseguro. Es DISTINTO del "monto real de pólizas" (suma sin multiplicar de Monto de Cobranza, lo que de verdad pagan los afiliados — tarjeta/modal propios en el Dashboard).
+- **Coberturas por póliza** (`src/domain/coverage.ts`, tabla `policy_coverages`): 7 coberturas fijas (2 obligatorias — Fallecimiento, Invalidez Total — + 5 adicionales). El agente tipea a mano el monto de cada cobertura marcada; no hay tabla de tarifas automática.
+  - **Monto de Emisión** = suma de las coberturas OBLIGATORIAS. Es la base de Emisión Vida (comisionable).
+  - **Monto de Cobranza** = suma de TODAS las coberturas marcadas (obligatorias + adicionales). Es lo que paga el cliente en cada cuota.
+  - Si solo hay obligatorias, Emisión == Cobranza; con adicionales, Cobranza > Emisión.
+- **Modalidad** (`mensual`/`trimestral`/`semestral`/`anual`, columna `policies.modalidad`): cada cuántos meses se genera una cuota de cobranza (`generateOwedMonths(..., stepMonths)`). No afecta el monto, solo la cadencia.
 - **Tramos de incentivo, factor de cobranza, factor ICV**: configurables por período en `/configuracion/periodos`, con tablas de reglas (`incentive_rules`, `collection_factor_rules`, `icv_factor_rules`).
 - **Estados de pago** (`PaymentStatus`): `pagado`, `no_pagado`, `pendiente_confirmar`, `no_corresponde`. Vencimiento por defecto el día 20 del mes si no se especifica otro.
-- **Estados de afiliado/póliza** (`AffiliateStatus`): `activo`, `pendiente`, `inactivo`, `cancelado`.
+- **Mora / semáforo de Cobranza** (`calculateMoraLevel`): cantidad de cuotas consecutivas vencidas y realmente sin pagar (`no_pagado`, no cuenta `pendiente_confirmar`) de una póliza. Mora 3 y 4 son críticas (badge rojo, se priorizan en la lista de Cobranza); mora 1-2 es badge ámbar.
+- **Estados de afiliado/póliza** (`AffiliateStatus`): `activo`, `pendiente`, `inactivo`, `cancelado`. Al cancelar una póliza se registra `cancellation_date`; "días vigentes" = `calculateDaysActive(startDate, cancellationDate)` (desde Fecha de Emisión).
 - **Estados de período** (`PeriodStatus`): `draft`, `active`, `closed` (cerrado = reglas inmutables).
+- **Dashboard — 2 períodos distintos**: *Periodo Incentivo Agente* es el período de incentivo configurado en `/configuracion/periodos` (16 al 15, controla el sueldo). *Periodo Mes Ponderado* es el mes calendario (1 al último día), mide Emisión Vida de las pólizas emitidas ese mes contra una meta FIJA de S/ 13,500 (`MES_PONDERADO_GOAL`, no configurable por período) — controla la renovación de contrato.
+- **Bono de Recaudo (12%, `src/domain/recaudoBonus.ts`)**: requiere (a) el agente tenga ≥7 meses de antigüedad desde su `profiles.interseguro_start_date` (campo editable desde el widget del Dashboard) y (b) la Emisión Vida del período vigente alcance la "primera banda" = tramo más bajo (`min`) configurado en Incentivos (`findLowestTier`). Base = suma histórica (no solo del período activo) de pagos `pagado` de pólizas con ≤18 meses de antigüedad desde su Fecha de Emisión. Bono = base × 12%.
 - **Seguimiento de contactos** (prospección, separado de afiliados): estado libre con sugerencias (`Contactado`, `Cotización enviada`, `No contesta`, `No quiso la póliza`, `Pendiente de seguimiento`, `Convertido a afiliado` — **ya no existe** "Interesado - en evaluación", se fusionó con "Cotización enviada" vía migración `0016`), fecha de recontacto, fecha de vencimiento de cotización, vista de detalle con el ícono de ojo (igual que Afiliados).
 
 ## Pendientes / ideas discutidas pero no construidas
@@ -67,4 +75,4 @@ npm run lint    # ESLint
 npm run build   # build de producción (incluye tsc -b)
 ```
 
-Migraciones en `supabase/migrations/`, numeradas y aplicadas en orden (última: `0016`). El usuario las corre manualmente en el SQL Editor de Supabase — nunca asumir que ya están aplicadas sin que él lo confirme.
+Migraciones en `supabase/migrations/`, numeradas y aplicadas en orden (última: `0017`). El usuario las corre manualmente en el SQL Editor de Supabase — nunca asumir que ya están aplicadas sin que él lo confirme.
