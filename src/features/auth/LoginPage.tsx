@@ -4,7 +4,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/Button'
 import { BrandLogo } from '@/components/layout/BrandLogo'
 import { ForgotPasswordForm } from './ForgotPasswordForm'
-import { SignUpForm } from './SignUpForm'
 
 export function LoginPage() {
   const { user, signInWithPassword, loading, recoveryPending } = useAuth()
@@ -13,7 +12,6 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [showSignUp, setShowSignUp] = useState(false)
 
   if (!loading && user) return <Navigate to={recoveryPending ? '/restablecer-password' : '/'} replace />
 
@@ -37,8 +35,6 @@ export function LoginPage() {
 
         {showForgotPassword ? (
           <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
-        ) : showSignUp ? (
-          <SignUpForm onBack={() => setShowSignUp(false)} />
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-card">
             <div>
@@ -82,13 +78,6 @@ export function LoginPage() {
               className="w-full text-center text-sm text-slate-500 hover:text-slate-700 hover:underline"
             >
               ¿Olvidaste tu contraseña?
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSignUp(true)}
-              className="w-full text-center text-sm text-slate-500 hover:text-slate-700 hover:underline"
-            >
-              ¿No tienes cuenta? Crear una
             </button>
           </form>
         )}
