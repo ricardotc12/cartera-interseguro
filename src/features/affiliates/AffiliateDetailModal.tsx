@@ -65,7 +65,7 @@ export function AffiliateDetailModal({
             <p className="break-words font-medium text-slate-700">{affiliate.phone ?? '—'}</p>
           </div>
           <div>
-            <p className="text-slate-400">Fecha de afiliación</p>
+            <p className="text-slate-400">Fecha de Emisión</p>
             <p className="font-medium text-slate-700">{formatDate(affiliate.affiliationDate)}</p>
           </div>
         </div>

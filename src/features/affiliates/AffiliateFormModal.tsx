@@ -51,7 +51,7 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
     if (!firstName.trim()) errors.firstName = 'Ingresa los nombres.'
     if (!lastName.trim()) errors.lastName = 'Ingresa los apellidos.'
     if (!isValidEmail(email)) errors.email = 'Ingresa un correo válido.'
-    if (!affiliationDate) errors.affiliationDate = 'Ingresa la fecha de afiliación.'
+    if (!affiliationDate) errors.affiliationDate = 'Ingresa la fecha de emisión.'
 
     if (!isEdit) {
       if (!policyNumber.trim()) errors.policyNumber = 'Ingresa el número de póliza.'
@@ -153,7 +153,7 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
           <FormField label="Celular" htmlFor="phone">
             <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass()} />
           </FormField>
-          <FormField label="Fecha de afiliación" htmlFor="affiliationDate" error={fieldErrors.affiliationDate}>
+          <FormField label="Fecha de Emisión" htmlFor="affiliationDate" error={fieldErrors.affiliationDate}>
             <input
               id="affiliationDate"
               type="date"
