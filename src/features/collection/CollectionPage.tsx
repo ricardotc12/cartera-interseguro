@@ -7,10 +7,11 @@ import { fieldClass } from '@/components/ui/FormField'
 import { TableRowsSkeleton } from '@/components/ui/Skeleton'
 import { formatCurrency, formatMonthYear } from '@/lib/format'
 import { today } from '@/lib/date'
-import { calculateDaysOverdue, effectiveDueDate, getDisplayPaymentStatus } from '@/domain'
+import { calculateDaysOverdue, calculateMoraLevel, effectiveDueDate, getDisplayPaymentStatus } from '@/domain'
 import type { Affiliate, PaymentStatus } from '@/types/domain'
 import { PaymentFormModal } from './PaymentFormModal'
 import { PaymentHistoryModal } from './PaymentHistoryModal'
+import { MoraBadge } from './MoraBadge'
 
 type StatusFilter = 'pendientes' | PaymentStatus | 'todos'
 
@@ -38,20 +39,45 @@ interface AffiliateSummary {
   paidCount: number
   totalPending: number
   maxOverdue: number | null
+  /** Mayor nivel de mora entre todas las pólizas del afiliado (semáforo de Cobranza). */
+  maxMora: number
+}
+
+/** Mora por póliza calculada sobre el historial COMPLETO de pagos (sin los filtros de pantalla), para que el semáforo no cambie según el filtro de mes/estado activo. */
+function calculateMoraByPolicy(allPayments: PaymentWithContext[]): Map<string, number> {
+  const byPolicy = new Map<string, PaymentWithContext[]>()
+  for (const payment of allPayments) {
+    const key = payment.policy.id
+    if (!byPolicy.has(key)) byPolicy.set(key, [])
+    byPolicy.get(key)!.push(payment)
+  }
+  const referenceDate = today()
+  return new Map(Array.from(byPolicy.entries()).map(([policyId, items]) => [policyId, calculateMoraLevel(items, referenceDate)]))
 }
 
 /** Agrupa los pagos filtrados por afiliado: cada persona aparece una sola vez en la lista (sección "un afiliado, un click, todos sus meses"). */
-function groupByAffiliate(items: PaymentWithContext[]): AffiliateSummary[] {
+function groupByAffiliate(items: PaymentWithContext[], moraByPolicy: Map<string, number>): AffiliateSummary[] {
   const byId = new Map<string, AffiliateSummary>()
 
   for (const payment of items) {
     const id = payment.affiliate.id
     let summary = byId.get(id)
     if (!summary) {
-      summary = { affiliate: payment.affiliate, policyNumbers: [], pendingCount: 0, paidCount: 0, totalPending: 0, maxOverdue: null }
+      summary = {
+        affiliate: payment.affiliate,
+        policyNumbers: [],
+        pendingCount: 0,
+        paidCount: 0,
+        totalPending: 0,
+        maxOverdue: null,
+        maxMora: 0,
+      }
       byId.set(id, summary)
     }
     if (!summary.policyNumbers.includes(payment.policy.policyNumber)) summary.policyNumbers.push(payment.policy.policyNumber)
+
+    const mora = moraByPolicy.get(payment.policy.id) ?? 0
+    if (mora > summary.maxMora) summary.maxMora = mora
 
     if (payment.status === 'pagado') {
       summary.paidCount += 1
@@ -70,7 +96,10 @@ function groupByAffiliate(items: PaymentWithContext[]): AffiliateSummary[] {
     }
   }
 
+  // Prioridad del semáforo: mora crítica (3/4) primero, luego la cantidad de meses
+  // pendientes y el atraso en días, como ya hacía antes de tener mora.
   return Array.from(byId.values()).sort((a, b) => {
+    if (a.maxMora !== b.maxMora) return b.maxMora - a.maxMora
     if (a.pendingCount !== b.pendingCount) return b.pendingCount - a.pendingCount
     if ((b.maxOverdue ?? -1) !== (a.maxOverdue ?? -1)) return (b.maxOverdue ?? -1) - (a.maxOverdue ?? -1)
     return `${a.affiliate.lastName} ${a.affiliate.firstName}`.localeCompare(`${b.affiliate.lastName} ${b.affiliate.firstName}`)
@@ -113,7 +142,8 @@ export function CollectionPage() {
     [payments, search, statusFilter, monthFilter],
   )
 
-  const summaries = useMemo(() => groupByAffiliate(filtered), [filtered])
+  const moraByPolicy = useMemo(() => calculateMoraByPolicy(payments), [payments])
+  const summaries = useMemo(() => groupByAffiliate(filtered, moraByPolicy), [filtered, moraByPolicy])
 
   const historyPayments = historyFor ? payments.filter((p) => p.affiliate.id === historyFor.id) : []
 
@@ -201,15 +231,18 @@ export function CollectionPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-600">{summary.policyNumbers.join(', ')}</td>
                     <td className="px-4 py-3">
-                      {summary.pendingCount > 0 ? (
-                        <Badge tone={summary.maxOverdue ? 'danger' : 'warning'} dot>
-                          {summary.pendingCount} pendiente{summary.pendingCount === 1 ? '' : 's'}
-                        </Badge>
-                      ) : (
-                        <Badge tone="success" dot>
-                          Al día
-                        </Badge>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1">
+                        {summary.pendingCount > 0 ? (
+                          <Badge tone={summary.maxOverdue ? 'danger' : 'warning'} dot>
+                            {summary.pendingCount} pendiente{summary.pendingCount === 1 ? '' : 's'}
+                          </Badge>
+                        ) : (
+                          <Badge tone="success" dot>
+                            Al día
+                          </Badge>
+                        )}
+                        <MoraBadge level={summary.maxMora} />
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {summary.totalPending > 0 ? formatCurrency(summary.totalPending) : '—'}
@@ -279,15 +312,18 @@ export function CollectionPage() {
                       </p>
                       <p className="text-xs text-slate-500">DNI {summary.affiliate.dni} · Póliza {summary.policyNumbers.join(', ')}</p>
                     </div>
-                    {summary.pendingCount > 0 ? (
-                      <Badge tone={summary.maxOverdue ? 'danger' : 'warning'} dot>
-                        {summary.pendingCount} pendiente{summary.pendingCount === 1 ? '' : 's'}
-                      </Badge>
-                    ) : (
-                      <Badge tone="success" dot>
-                        Al día
-                      </Badge>
-                    )}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      {summary.pendingCount > 0 ? (
+                        <Badge tone={summary.maxOverdue ? 'danger' : 'warning'} dot>
+                          {summary.pendingCount} pendiente{summary.pendingCount === 1 ? '' : 's'}
+                        </Badge>
+                      ) : (
+                        <Badge tone="success" dot>
+                          Al día
+                        </Badge>
+                      )}
+                      <MoraBadge level={summary.maxMora} />
+                    </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="text-slate-600">

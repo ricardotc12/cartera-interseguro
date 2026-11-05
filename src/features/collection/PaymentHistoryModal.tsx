@@ -1,9 +1,10 @@
 import { CheckCircle2, Pencil } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { PaymentStatusBadge } from './PaymentStatusBadge'
+import { MoraBadge } from './MoraBadge'
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/format'
 import { today } from '@/lib/date'
-import { calculateDaysOverdue, effectiveDueDate, getDisplayPaymentStatus } from '@/domain'
+import { calculateDaysOverdue, calculateMoraLevel, effectiveDueDate, getDisplayPaymentStatus } from '@/domain'
 import type { PaymentWithContext } from '@/hooks/usePayments'
 import type { Affiliate } from '@/types/domain'
 
@@ -47,9 +48,13 @@ export function PaymentHistoryModal({ open, onClose, affiliate, payments, onRegi
         ) : (
           Array.from(byPolicy.entries()).map(([policyId, items]) => {
             const sorted = items.slice().sort((a, b) => b.yearMonth.localeCompare(a.yearMonth))
+            const moraLevel = calculateMoraLevel(items, today())
             return (
               <div key={policyId}>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">Póliza {sorted[0]!.policy.policyNumber}</h3>
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  Póliza {sorted[0]!.policy.policyNumber}
+                  <MoraBadge level={moraLevel} />
+                </h3>
                 <ul className="space-y-2">
                   {sorted.map((payment) => {
                     const dueDate = effectiveDueDate(payment.yearMonth, payment.dueDate)
