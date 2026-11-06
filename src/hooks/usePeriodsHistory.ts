@@ -72,24 +72,26 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
           // 16 al 15 — hay que comparar contra la fecha de vencimiento real (el 20), no
           // contra esa fecha truncada, o el mes que corresponde queda fuera y entra el
           // siguiente por error (mismo bug que en usePeriodMetrics).
-          const periodPayments = payments
-            .filter((p) => {
-              const dueDate = effectiveDueDate(p.year_month, p.due_date)
-              return dueDate >= period.startDate && dueDate <= period.endDate
-            })
-            .map((p) => ({
-              expectedAmount: p.expected_amount,
-              paidAmount: p.paid_amount,
-              isRescheduled: p.is_rescheduled,
-              status: p.status,
-              yearMonth: p.year_month,
-              policy: p.policies,
-            }))
-          // Igual que en usePeriodMetrics: Ratio Cobranza excluye las cuotas "fantasma" que
-          // solo existen para ICV en pólizas anuladas; ICV, en cambio, las incluye dentro del
-          // primer año de emisión.
+          const allPaymentsMapped = payments.map((p) => ({
+            expectedAmount: p.expected_amount,
+            paidAmount: p.paid_amount,
+            isRescheduled: p.is_rescheduled,
+            status: p.status,
+            dueDate: effectiveDueDate(p.year_month, p.due_date),
+            yearMonth: p.year_month,
+            policy: p.policies,
+          }))
+          const periodPayments = allPaymentsMapped.filter((p) => p.dueDate >= period.startDate && p.dueDate <= period.endDate)
+          // Ratio Cobranza excluye las cuotas "fantasma" que solo existen para ICV en pólizas
+          // anuladas (concepto por período, igual que en usePeriodMetrics).
           const collectionRatio = calculateCollectionRatio(periodPayments.filter((p) => p.policy?.status !== 'cancelado'))
-          const icvPayments = periodPayments.filter((p) => p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth))
+          // ICV, a diferencia de Ratio Cobranza, es acumulado: todas las cuotas que corresponden
+          // hasta el fin de este período (no solo las que vencen dentro de él) — mismo criterio
+          // que usePeriodMetrics, para que el historial muestre la evolución del acumulado real
+          // y no una fracción por período que no coincide con el reporte oficial de Interseguro.
+          const icvPayments = allPaymentsMapped.filter(
+            (p) => p.dueDate <= period.endDate && p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth),
+          )
           const icvPercentage = calculateCollectionRatio(icvPayments)
 
           return {

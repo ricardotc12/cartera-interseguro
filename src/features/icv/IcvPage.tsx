@@ -63,7 +63,7 @@ export function IcvPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>ICV — {currentPeriod.name}</CardTitle>
+            <CardTitle>ICV (acumulado)</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-3xl font-semibold text-slate-900">
@@ -116,8 +116,8 @@ export function IcvPage() {
       </Card>
 
       <p className="text-xs text-slate-400">
-        El ICV se calcula solo, igual que Interseguro: Recaudado ÷ Por cobrar de las cuotas de tus pólizas activas, más las pólizas
-        anuladas dentro de su primer año desde la Fecha de Emisión.
+        El ICV se calcula solo, igual que Interseguro: Recaudado ÷ Por cobrar acumulado de todas las cuotas de tus pólizas activas (de
+        siempre, no solo del período vigente), más las pólizas anuladas dentro de su primer año desde la Fecha de Emisión.
       </p>
     </div>
   )

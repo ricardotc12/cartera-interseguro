@@ -103,17 +103,16 @@ export function usePeriodMetrics(period: PeriodWithRules | null) {
         policies: { status: AffiliateStatus; start_date: string } | null
       }[]
 
-      const paymentsInPeriod = paymentRows
-        .map((p) => ({
-          expectedAmount: p.expected_amount,
-          paidAmount: p.paid_amount,
-          isRescheduled: p.is_rescheduled,
-          status: p.status,
-          dueDate: effectiveDueDate(p.year_month, p.due_date),
-          yearMonth: p.year_month,
-          policy: p.policies,
-        }))
-        .filter((p) => p.dueDate >= period.startDate && p.dueDate <= period.endDate)
+      const allPayments = paymentRows.map((p) => ({
+        expectedAmount: p.expected_amount,
+        paidAmount: p.paid_amount,
+        isRescheduled: p.is_rescheduled,
+        status: p.status,
+        dueDate: effectiveDueDate(p.year_month, p.due_date),
+        yearMonth: p.year_month,
+        policy: p.policies,
+      }))
+      const paymentsInPeriod = allPayments.filter((p) => p.dueDate >= period.startDate && p.dueDate <= period.endDate)
 
       // Ratio Cobranza y los conteos de pagos miden la cobranza del negocio vigente — las
       // cuotas "fantasma" que se generan para pólizas anuladas (solo para ICV, ver abajo) no
@@ -123,9 +122,13 @@ export function usePeriodMetrics(period: PeriodWithRules | null) {
       const collectionRatio = calculateCollectionRatio(billablePayments)
       const collectionFactor = collectionRatio != null ? calculateCollectionFactor(collectionRatio, period.collectionFactorRules) : null
 
-      // ICV: las mismas cuotas del período, pero solo las que corresponden (activas/pendientes
-      // siempre; anuladas solo dentro de su primer año de emisión — ver domain/icv.ts).
-      const icvPayments = paymentsInPeriod.filter((p) => p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth))
+      // ICV, a diferencia de Ratio Cobranza, NO se limita al período de incentivo vigente —
+      // es un acumulado histórico de todas las cuotas que corresponden (activas/pendientes
+      // siempre; anuladas solo dentro de su primer año de emisión — ver domain/icv.ts), igual
+      // que la base del Bono de Recaudo. Limitarlo al período (como antes) lo dejaba mostrando
+      // solo una fracción del total y no coincidía con el reporte oficial de Interseguro, que
+      // es acumulado (confirmado: 16,393.77 / 17,966.94 = 91.24%, sección 30 de CLAUDE.md).
+      const icvPayments = allPayments.filter((p) => p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth))
       const icvPercentage = calculateCollectionRatio(icvPayments)
       const icvRecaudado = icvPayments.reduce((sum, p) => sum + (p.paidAmount ?? 0), 0)
       const icvPorCobrar = icvPayments.reduce((sum, p) => sum + p.expectedAmount, 0)
