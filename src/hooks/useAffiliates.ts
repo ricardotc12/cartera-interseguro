@@ -131,6 +131,15 @@ function useAffiliatesImpl() {
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
+    // DataProviders monta este hook por encima de <Routes>, antes de que useAuth() termine de
+    // restaurar la sesión guardada — sin este resguardo, la consulta salía disparada sin sesión
+    // todavía válida (RLS la devolvía vacía) y, como no dependía de `user`, nunca se repetía: la
+    // lista de Afiliados (y por lo tanto el Dashboard) quedaba vacía hasta que la asesora
+    // recargaba la página entera a mano.
+    if (!user) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     const { data, error: fetchError } = await supabase
       .from('affiliates')
@@ -144,7 +153,7 @@ function useAffiliatesImpl() {
       setError(null)
     }
     setLoading(false)
-  }, [])
+  }, [user])
 
   useEffect(() => {
     refresh()

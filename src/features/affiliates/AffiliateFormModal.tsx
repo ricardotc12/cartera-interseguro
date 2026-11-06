@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { FormField, fieldClass } from '@/components/ui/FormField'
 import { isValidDni, isValidEmail } from '@/lib/validators'
 import { today } from '@/lib/date'
+import { calculateDaysActive } from '@/domain'
 import type { AffiliateInput, AffiliateWithPolicies, PolicyInput } from '@/hooks/useAffiliates'
 import type { AffiliateStatus, Modalidad } from '@/types/domain'
 import { CoverageBreakdown, createInitialCoverageRows, coverageRowsToInputs, validateCoverageRows } from './CoverageBreakdown'
@@ -39,10 +40,13 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
   const [policyNumber, setPolicyNumber] = useState('')
   const [modalidad, setModalidad] = useState<Modalidad>('mensual')
   const [coverageRows, setCoverageRows] = useState(() => createInitialCoverageRows())
+  const [cancellationDate, setCancellationDate] = useState('')
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const daysActive = calculateDaysActive(affiliationDate, cancellationDate || null)
 
   function validate(): boolean {
     const errors: Record<string, string> = {}
@@ -56,6 +60,7 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
       if (!policyNumber.trim()) errors.policyNumber = 'Ingresa el número de póliza.'
       const coverageError = validateCoverageRows(coverageRows)
       if (coverageError) errors.coverages = coverageError
+      if (status === 'cancelado' && !cancellationDate) errors.cancellationDate = 'Ingresa la fecha de anulación.'
     }
 
     setFieldErrors(errors)
@@ -85,7 +90,7 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
           policyNumber: policyNumber.trim(),
           modalidad,
           startDate: affiliationDate,
-          cancellationDate: null,
+          cancellationDate: status === 'cancelado' ? cancellationDate : null,
           status,
           coverages: coverageRowsToInputs(coverageRows),
         })
@@ -195,6 +200,25 @@ export function AffiliateFormModal({ open, onClose, affiliate, onSubmitCreate, o
               onModalidadChange={setModalidad}
               error={fieldErrors.coverages}
             />
+            {status === 'cancelado' && (
+              <div className="mt-4">
+                <FormField
+                  label="Fecha de anulación"
+                  htmlFor="cancellationDate"
+                  error={fieldErrors.cancellationDate}
+                  hint={daysActive != null ? `Estuvo vigente ${daysActive} días.` : undefined}
+                >
+                  <input
+                    id="cancellationDate"
+                    type="date"
+                    value={cancellationDate}
+                    min={affiliationDate}
+                    onChange={(e) => setCancellationDate(e.target.value)}
+                    className={fieldClass(!!fieldErrors.cancellationDate)}
+                  />
+                </FormField>
+              </div>
+            )}
           </div>
         )}
 
