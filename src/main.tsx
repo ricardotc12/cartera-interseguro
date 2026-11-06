@@ -35,5 +35,13 @@ registerSW({
   onRegistered(registration) {
     if (!registration) return
     setInterval(() => registration.update(), 30 * 60_000)
+    // El intervalo de 30 min solo corre mientras la pestaña está activa — si la
+    // asesora deja la app abierta en segundo plano (o la PWA instalada queda
+    // suspendida) y vuelve horas después, no habría corrido ningún chequeo
+    // reciente y se quedaría viendo la versión vieja hasta el próximo tick.
+    // Por eso también se revisa apenas la pestaña vuelve a estar visible.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') registration.update()
+    })
   },
 })
