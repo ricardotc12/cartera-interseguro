@@ -12,7 +12,7 @@ const STATUS_OPTIONS: { value: AffiliateStatus; label: string }[] = [
   { value: 'activo', label: 'Activo' },
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'inactivo', label: 'Inactivo' },
-  { value: 'cancelado', label: 'Cancelado' },
+  { value: 'cancelado', label: 'Anulado' },
 ]
 
 interface PolicyFormModalProps {
@@ -44,7 +44,7 @@ export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormM
     if (!startDate) errors.startDate = 'Ingresa la fecha de emisión.'
     const coverageError = validateCoverageRows(coverageRows)
     if (coverageError) errors.coverages = coverageError
-    if (status === 'cancelado' && !cancellationDate) errors.cancellationDate = 'Ingresa la fecha de cancelación.'
+    if (status === 'cancelado' && !cancellationDate) errors.cancellationDate = 'Ingresa la fecha de anulación.'
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -113,7 +113,7 @@ export function PolicyFormModal({ open, onClose, policy, onSubmit }: PolicyFormM
 
         {status === 'cancelado' && (
           <FormField
-            label="Fecha de cancelación"
+            label="Fecha de anulación"
             htmlFor="cancellationDate"
             error={fieldErrors.cancellationDate}
             hint={daysActive != null ? `Estuvo vigente ${daysActive} días.` : undefined}

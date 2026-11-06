@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Users, UserPlus, TrendingUp, Percent, Wallet, Banknote, Award, Activity, Gauge, CheckCircle2, Clock } from 'lucide-react'
 import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
-import { useIcvRecords } from '@/hooks/useIcvRecords'
 import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
 import { usePeriodsHistory } from '@/hooks/usePeriodsHistory'
 import { useAffiliates } from '@/hooks/useAffiliates'
@@ -33,9 +32,7 @@ export function DashboardPage() {
   const [showPolicyTotal, setShowPolicyTotal] = useState(false)
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
   const currentPeriod = calculatePeriodForDate(today(), periods)
-  const { getForPeriod, loading: icvLoading } = useIcvRecords()
-  const icvRecord = currentPeriod ? getForPeriod(currentPeriod.id) : null
-  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, icvRecord?.icvPercentage ?? null)
+  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod)
   const { history, loading: historyLoading } = usePeriodsHistory(periods)
   const { affiliates, loading: affiliatesLoading } = useAffiliates()
   const { payments, loading: paymentsLoading } = usePayments()
@@ -43,8 +40,7 @@ export function DashboardPage() {
   const { total: collectionAlertsTotal, loading: collectionAlertsLoading } = useCollectionAlerts()
   const { total: contactRemindersTotal, loading: contactRemindersLoading } = useContactReminders()
 
-  const loading =
-    periodsLoading || icvLoading || metricsLoading || historyLoading || affiliatesLoading || paymentsLoading || profileLoading
+  const loading = periodsLoading || metricsLoading || historyLoading || affiliatesLoading || paymentsLoading || profileLoading
 
   if (loading) {
     return (
@@ -189,7 +185,7 @@ export function DashboardPage() {
         {profile?.showIcv && (
           <IndicatorCard
             label="ICV"
-            value={metrics.icvPercentage != null ? formatPoints(metrics.icvPercentage) : 'Sin registrar'}
+            value={metrics.icvPercentage != null ? formatPoints(metrics.icvPercentage) : 'Sin datos'}
             hint={metrics.icvFactor != null ? `Factor ${metrics.icvFactor.toFixed(2)}` : undefined}
             icon={Gauge}
             tone="secondary"

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { createHookContext } from '@/lib/createHookContext'
-import { generateOwedMonths, defaultDueDateForMonth, effectiveFirstOwedMonth, modalidadStepMonths } from '@/domain'
+import { generateOwedMonths, defaultDueDateForMonth, effectiveFirstOwedMonth, modalidadStepMonths, calculateTenureMonths } from '@/domain'
 import { today } from '@/lib/date'
 import type { Affiliate, AffiliateStatus, CoverageCode, Modalidad, Payment, PaymentStatus, Policy, PolicyCoverage } from '@/types/domain'
 
@@ -145,12 +145,16 @@ function usePaymentsImpl() {
     }
     setLoading(true)
 
-    // 1. Genera las cuotas de cobranza que aún no existan para pólizas vigentes
-    //    (cada cuántos meses le toca según su modalidad: mensual/trimestral/semestral/anual).
-    const { data: activePolicies, error: policiesError } = await supabase
+    // 1. Genera las cuotas de cobranza que aún no existan para pólizas que corresponden:
+    //    activas/pendientes (cada cuántos meses le toca según su modalidad) y también las
+    //    ANULADAS, pero solo hasta cumplir 12 meses desde su Fecha de Emisión — una póliza
+    //    anulada sigue "arrastrando" cuotas (recaudado 0) durante su primer año para el
+    //    cálculo de ICV (confirmado contra el reporte oficial de Interseguro), y después deja
+    //    de generarlas.
+    const { data: billablePolicies, error: policiesError } = await supabase
       .from('policies')
-      .select('id, collection_amount, start_date, modalidad')
-      .in('status', ['activo', 'pendiente'])
+      .select('id, collection_amount, start_date, modalidad, status')
+      .in('status', ['activo', 'pendiente', 'cancelado'])
 
     if (policiesError) {
       setError(policiesError.message)
@@ -159,8 +163,11 @@ function usePaymentsImpl() {
     }
 
     const referenceDate = today()
-    const rowsToEnsure = (activePolicies ?? []).flatMap((policy) =>
-      generateOwedMonths(effectiveFirstOwedMonth(policy.start_date), referenceDate, modalidadStepMonths(policy.modalidad)).map((yearMonth) => ({
+    const rowsToEnsure = (billablePolicies ?? []).flatMap((policy) => {
+      const months = generateOwedMonths(effectiveFirstOwedMonth(policy.start_date), referenceDate, modalidadStepMonths(policy.modalidad))
+      const eligibleMonths =
+        policy.status === 'cancelado' ? months.filter((m) => calculateTenureMonths(policy.start_date, m) < 12) : months
+      return eligibleMonths.map((yearMonth) => ({
         policy_id: policy.id,
         year_month: yearMonth,
         expected_amount: policy.collection_amount,
@@ -168,8 +175,8 @@ function usePaymentsImpl() {
         is_rescheduled: false,
         due_date: defaultDueDateForMonth(yearMonth),
         created_by: user.id,
-      })),
-    )
+      }))
+    })
 
     if (rowsToEnsure.length > 0) {
       const { error: upsertError } = await supabase

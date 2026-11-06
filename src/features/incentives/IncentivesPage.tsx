@@ -1,6 +1,5 @@
 import { ArrowDown } from 'lucide-react'
 import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
-import { useIcvRecords } from '@/hooks/useIcvRecords'
 import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
 import { useProfile } from '@/hooks/useProfile'
 import { calculatePeriodForDate } from '@/domain'
@@ -32,12 +31,10 @@ function Arrow() {
 export function IncentivesPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
   const currentPeriod = calculatePeriodForDate(today(), periods)
-  const { getForPeriod, loading: icvLoading } = useIcvRecords()
-  const icvRecord = currentPeriod ? getForPeriod(currentPeriod.id) : null
-  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, icvRecord?.icvPercentage ?? null)
+  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod)
   const { profile, loading: profileLoading } = useProfile()
 
-  const loading = periodsLoading || icvLoading || metricsLoading || profileLoading
+  const loading = periodsLoading || metricsLoading || profileLoading
 
   if (loading) return <p className="text-sm text-slate-500">Calculando incentivo…</p>
   if (periodsError || metricsError) return <p className="text-sm text-red-600">{periodsError ?? metricsError}</p>

@@ -128,6 +128,10 @@ export function CollectionPage() {
   const filtered = useMemo(
     () =>
       payments.filter((p) => {
+        // Las pólizas anuladas siguen generando cuotas por su primer año (para el cálculo de
+        // ICV), pero no hay nada que gestionar ahí día a día — no corresponde mostrarlas en
+        // esta lista de seguimiento de Cobranza.
+        if (p.policy.status === 'cancelado') return false
         if (monthFilter !== 'todos' && p.yearMonth !== monthFilter) return false
         if (statusFilter === 'pendientes') {
           if (!['no_pagado', 'pendiente_confirmar'].includes(p.status)) return false

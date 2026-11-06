@@ -128,7 +128,7 @@ export function AffiliateDetailModal({
                       )}
                       {policy.status === 'cancelado' && policy.cancellationDate && (
                         <p className="mt-1 text-xs font-medium text-red-600">
-                          Cancelada el {formatDate(policy.cancellationDate)} — estuvo vigente{' '}
+                          Anulada el {formatDate(policy.cancellationDate)} — estuvo vigente{' '}
                           {calculateDaysActive(policy.startDate, policy.cancellationDate)} días
                         </p>
                       )}

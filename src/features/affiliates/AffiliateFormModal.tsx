@@ -12,7 +12,7 @@ const STATUS_OPTIONS: { value: AffiliateStatus; label: string }[] = [
   { value: 'activo', label: 'Activo' },
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'inactivo', label: 'Inactivo' },
-  { value: 'cancelado', label: 'Cancelado' },
+  { value: 'cancelado', label: 'Anulado' },
 ]
 
 interface AffiliateFormModalProps {

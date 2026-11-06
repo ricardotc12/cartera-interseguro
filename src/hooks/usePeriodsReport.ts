@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { usePeriodsHistory } from './usePeriodsHistory'
-import { useIcvRecords } from './useIcvRecords'
 import { calculateBaseIncentive, calculateCollectionFactor, calculateFinalIncentive, calculateICVFactor, findIncentiveTier } from '@/domain'
 import type { IncentiveRule } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
@@ -25,7 +24,6 @@ export interface PeriodReportRow {
 /** Reporte histórico completo por período: Emisión Vida, Incentivos, Factor Cobranza e ICV (sección 30). */
 export function usePeriodsReport(periods: PeriodWithRules[]) {
   const { history, loading: historyLoading, error: historyError } = usePeriodsHistory(periods)
-  const { getForPeriod, loading: icvLoading } = useIcvRecords()
 
   const rows: PeriodReportRow[] = useMemo(() => {
     return history.map((point) => {
@@ -53,8 +51,7 @@ export function usePeriodsReport(periods: PeriodWithRules[]) {
       const baseIncentive = incentiveTier != null ? calculateBaseIncentive(point.vidaEmission, incentiveTier) : null
       const collectionFactor =
         point.collectionRatio != null ? calculateCollectionFactor(point.collectionRatio, period.collectionFactorRules) : null
-      const icvRecord = getForPeriod(period.id)
-      const icvFactor = icvRecord ? calculateICVFactor(icvRecord.icvPercentage, period.icvFactorRules) : null
+      const icvFactor = point.icvPercentage != null ? calculateICVFactor(point.icvPercentage, period.icvFactorRules) : null
       const finalIncentive =
         baseIncentive != null && collectionFactor != null && icvFactor != null
           ? calculateFinalIncentive(baseIncentive, collectionFactor, icvFactor)
@@ -72,12 +69,12 @@ export function usePeriodsReport(periods: PeriodWithRules[]) {
         baseIncentive,
         collectionRatio: point.collectionRatio,
         collectionFactor,
-        icvPercentage: icvRecord?.icvPercentage ?? null,
+        icvPercentage: point.icvPercentage,
         icvFactor,
         finalIncentive,
       }
     })
-  }, [history, periods, getForPeriod])
+  }, [history, periods])
 
-  return { rows, loading: historyLoading || icvLoading, error: historyError }
+  return { rows, loading: historyLoading, error: historyError }
 }

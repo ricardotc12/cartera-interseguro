@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateICVFactor } from './icv'
+import { calculateICVFactor, qualifiesForIcv } from './icv'
 import type { IcvFactorRule } from '@/types/domain'
 
 describe('calculateICVFactor (sección 23 y 34)', () => {
@@ -25,5 +25,19 @@ describe('calculateICVFactor (sección 23 y 34)', () => {
 
   it('devuelve null si ningún tramo cubre el valor', () => {
     expect(calculateICVFactor(150, periodoDos)).toBeNull()
+  })
+})
+
+describe('qualifiesForIcv', () => {
+  it('una póliza activa siempre cuenta, sin importar cuánto tiempo lleva', () => {
+    expect(qualifiesForIcv('activo', '2020-01-01', '2026-11-01')).toBe(true)
+  })
+
+  it('una póliza anulada cuenta dentro de los primeros 12 meses desde su emisión', () => {
+    expect(qualifiesForIcv('cancelado', '2026-01-15', '2026-09-01')).toBe(true)
+  })
+
+  it('una póliza anulada deja de contar pasado el año desde su emisión', () => {
+    expect(qualifiesForIcv('cancelado', '2026-01-15', '2027-02-01')).toBe(false)
   })
 })

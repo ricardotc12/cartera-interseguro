@@ -13,7 +13,7 @@ import { today } from '@/lib/date'
 export function CollectionFactorPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
   const currentPeriod = calculatePeriodForDate(today(), periods)
-  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, null)
+  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod)
   const { profile, loading: profileLoading, setShowCollectionRatio } = useProfile()
   const [toggleError, setToggleError] = useState<string | null>(null)
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { calculateCollectionRatio, calculateVidaEmission, effectiveDueDate } from '@/domain'
-import type { PaymentStatus } from '@/types/domain'
+import { calculateCollectionRatio, calculateVidaEmission, effectiveDueDate, qualifiesForIcv } from '@/domain'
+import type { AffiliateStatus, PaymentStatus } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
 
 export interface PeriodHistoryPoint {
@@ -11,6 +11,7 @@ export interface PeriodHistoryPoint {
   vidaEmission: number
   vidaEmissionGoal: number
   collectionRatio: number | null
+  icvPercentage: number | null
 }
 
 /**
@@ -37,7 +38,9 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
       setLoading(true)
       const [policiesResult, paymentsResult] = await Promise.all([
         supabase.from('policies').select('emission_amount, start_date'),
-        supabase.from('payments').select('year_month, due_date, expected_amount, paid_amount, is_rescheduled, status'),
+        supabase
+          .from('payments')
+          .select('year_month, due_date, expected_amount, paid_amount, is_rescheduled, status, policies(status, start_date)'),
       ])
 
       if (cancelled) return
@@ -48,7 +51,15 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
       }
 
       const policies = policiesResult.data ?? []
-      const payments = paymentsResult.data ?? []
+      const payments = (paymentsResult.data ?? []) as unknown as {
+        year_month: string
+        due_date: string | null
+        expected_amount: number
+        paid_amount: number | null
+        is_rescheduled: boolean
+        status: PaymentStatus
+        policies: { status: AffiliateStatus; start_date: string } | null
+      }[]
 
       const points: PeriodHistoryPoint[] = [...periods]
         .sort((a, b) => a.startDate.localeCompare(b.startDate))
@@ -70,9 +81,16 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
               expectedAmount: p.expected_amount,
               paidAmount: p.paid_amount,
               isRescheduled: p.is_rescheduled,
-              status: p.status as PaymentStatus,
+              status: p.status,
+              yearMonth: p.year_month,
+              policy: p.policies,
             }))
-          const collectionRatio = calculateCollectionRatio(periodPayments)
+          // Igual que en usePeriodMetrics: Ratio Cobranza excluye las cuotas "fantasma" que
+          // solo existen para ICV en pólizas anuladas; ICV, en cambio, las incluye dentro del
+          // primer año de emisión.
+          const collectionRatio = calculateCollectionRatio(periodPayments.filter((p) => p.policy?.status !== 'cancelado'))
+          const icvPayments = periodPayments.filter((p) => p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth))
+          const icvPercentage = calculateCollectionRatio(icvPayments)
 
           return {
             periodId: period.id,
@@ -81,6 +99,7 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
             vidaEmission,
             vidaEmissionGoal: period.vidaEmissionGoal,
             collectionRatio,
+            icvPercentage,
           }
         })
 

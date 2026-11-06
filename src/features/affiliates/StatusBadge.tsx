@@ -12,7 +12,7 @@ const labelByStatus: Record<AffiliateStatus, string> = {
   activo: 'Activo',
   pendiente: 'Pendiente',
   inactivo: 'Inactivo',
-  cancelado: 'Cancelado',
+  cancelado: 'Anulado',
 }
 
 export function StatusBadge({ status }: { status: AffiliateStatus }) {

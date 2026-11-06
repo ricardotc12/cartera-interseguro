@@ -1,5 +1,4 @@
 import { usePeriodsAdmin } from '@/hooks/usePeriodsAdmin'
-import { useIcvRecords } from '@/hooks/useIcvRecords'
 import { usePeriodMetrics } from '@/hooks/usePeriodMetrics'
 import { calculatePeriodForDate, calculateGoalProgress } from '@/domain'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -41,11 +40,9 @@ function GoalCard({
 export function GoalsPage() {
   const { periods, loading: periodsLoading, error: periodsError } = usePeriodsAdmin()
   const currentPeriod = calculatePeriodForDate(today(), periods)
-  const { getForPeriod, loading: icvLoading } = useIcvRecords()
-  const icvRecord = currentPeriod ? getForPeriod(currentPeriod.id) : null
-  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod, icvRecord?.icvPercentage ?? null)
+  const { metrics, loading: metricsLoading, error: metricsError } = usePeriodMetrics(currentPeriod)
 
-  const loading = periodsLoading || icvLoading || metricsLoading
+  const loading = periodsLoading || metricsLoading
 
   if (loading) return <p className="text-sm text-slate-500">Cargando metas…</p>
   if (periodsError || metricsError) return <p className="text-sm text-red-600">{periodsError ?? metricsError}</p>
@@ -89,10 +86,10 @@ export function GoalsPage() {
           </Card>
         )}
 
-        {currentPeriod.icvGoal != null && icvRecord != null ? (
+        {currentPeriod.icvGoal != null && metrics.icvPercentage != null ? (
           <GoalCard
             title="Meta ICV"
-            progress={calculateGoalProgress(currentPeriod.icvGoal, icvRecord.icvPercentage)}
+            progress={calculateGoalProgress(currentPeriod.icvGoal, metrics.icvPercentage)}
             formatGoal={formatPoints}
             formatActual={formatPoints}
           />
@@ -103,7 +100,7 @@ export function GoalsPage() {
             </CardHeader>
             <CardBody>
               <p className="text-sm text-slate-400">
-                {currentPeriod.icvGoal == null ? 'Este período no tiene una meta de ICV configurada.' : 'Aún no registras el % ICV de este período.'}
+                {currentPeriod.icvGoal == null ? 'Este período no tiene una meta de ICV configurada.' : 'Aún no hay cuotas de ICV registradas en este período.'}
               </p>
             </CardBody>
           </Card>

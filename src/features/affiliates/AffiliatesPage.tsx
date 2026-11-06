@@ -18,7 +18,7 @@ const STATUS_FILTERS: { value: AffiliateStatus | 'todos'; label: string }[] = [
   { value: 'activo', label: 'Activo' },
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'inactivo', label: 'Inactivo' },
-  { value: 'cancelado', label: 'Cancelado' },
+  { value: 'cancelado', label: 'Anulado' },
 ]
 
 function matchesSearch(affiliate: AffiliateWithPolicies, query: string): boolean {

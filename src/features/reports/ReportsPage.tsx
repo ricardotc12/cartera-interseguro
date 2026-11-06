@@ -68,7 +68,7 @@ function AffiliatesReport() {
           <option value="activo">Activo</option>
           <option value="pendiente">Pendiente</option>
           <option value="inactivo">Inactivo</option>
-          <option value="cancelado">Cancelado</option>
+          <option value="cancelado">Anulado</option>
         </select>
         <Button variant="secondary" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="h-4 w-4" />
