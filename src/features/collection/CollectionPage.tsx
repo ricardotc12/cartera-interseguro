@@ -115,6 +115,11 @@ export function CollectionPage() {
   // el mes actual ya está "Al día", el estado general del afiliado debe seguir avisando la
   // deuda vieja, no ocultarla solo porque no es el mes en pantalla.
   const [monthFilter, setMonthFilter] = useState<string>('todos')
+  // Oculto por defecto (sección 19: las cuotas de pólizas anuladas son "fantasma", solo para
+  // ICV, no hay nada que gestionar ahí día a día) — pero la asesora sí necesita poder entrar a
+  // registrar/corregir un pago histórico de un cliente ya anulado (ej. un cobro de antes de que
+  // anulara su póliza), así que lo deja ver bajo pedido con este interruptor.
+  const [showCancelled, setShowCancelled] = useState(false)
   const [registering, setRegistering] = useState<PaymentWithContext | undefined>(undefined)
   const [editing, setEditing] = useState<PaymentWithContext | undefined>(undefined)
   const [historyFor, setHistoryFor] = useState<Affiliate | undefined>(undefined)
@@ -129,9 +134,9 @@ export function CollectionPage() {
     () =>
       payments.filter((p) => {
         // Las pólizas anuladas siguen generando cuotas por su primer año (para el cálculo de
-        // ICV), pero no hay nada que gestionar ahí día a día — no corresponde mostrarlas en
-        // esta lista de seguimiento de Cobranza.
-        if (p.policy.status === 'cancelado') return false
+        // ICV), pero no hay nada que gestionar ahí día a día — se ocultan de esta lista salvo
+        // que la asesora active "Mostrar anulados" (ej. para registrar un cobro histórico).
+        if (p.policy.status === 'cancelado' && !showCancelled) return false
         if (monthFilter !== 'todos' && p.yearMonth !== monthFilter) return false
         if (statusFilter === 'pendientes') {
           if (!['no_pagado', 'pendiente_confirmar'].includes(p.status)) return false
@@ -143,7 +148,7 @@ export function CollectionPage() {
         if (statusFilter !== 'pendientes' && statusFilter !== 'todos' && p.status !== statusFilter) return false
         return matchesSearch(p, search)
       }),
-    [payments, search, statusFilter, monthFilter],
+    [payments, search, statusFilter, monthFilter, showCancelled],
   )
 
   const moraByPolicy = useMemo(() => calculateMoraByPolicy(payments), [payments])
@@ -186,6 +191,15 @@ export function CollectionPage() {
             </option>
           ))}
         </select>
+        <label className="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap">
+          <input
+            type="checkbox"
+            checked={showCancelled}
+            onChange={(e) => setShowCancelled(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+          />
+          Mostrar anulados
+        </label>
       </div>
 
       {error && (
