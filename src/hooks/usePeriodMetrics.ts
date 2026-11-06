@@ -127,8 +127,17 @@ export function usePeriodMetrics(period: PeriodWithRules | null) {
       // siempre; anuladas solo dentro de su primer año de emisión — ver domain/icv.ts), igual
       // que la base del Bono de Recaudo. Limitarlo al período (como antes) lo dejaba mostrando
       // solo una fracción del total y no coincidía con el reporte oficial de Interseguro, que
-      // es acumulado (confirmado: 16,393.77 / 17,966.94 = 91.24%, sección 30 de CLAUDE.md).
-      const icvPayments = allPayments.filter((p) => p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth))
+      // es acumulado (confirmado contra reporte oficial, sección 30 de CLAUDE.md).
+      // Sí se limita a cuotas cuya fecha de vencimiento ya llegó: generateOwedMonths pre-genera
+      // de una vez todos los meses hasta diciembre del año en curso (sección 19 del dominio),
+      // así que sin este corte se contaban cuotas futuras que Interseguro todavía ni cobra —
+      // inflando "por cobrar" y hundiendo el ICV de más (confirmado con datos reales: la
+      // asesora reportó el desfase y, al revisar sus cuotas, varias pólizas activas ya tenían
+      // generada su cuota de diciembre estando apenas a inicios de noviembre).
+      const referenceDate = today()
+      const icvPayments = allPayments.filter(
+        (p) => p.dueDate <= referenceDate && p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth),
+      )
       const icvPercentage = calculateCollectionRatio(icvPayments)
       const icvRecaudado = icvPayments.reduce((sum, p) => sum + (p.paidAmount ?? 0), 0)
       const icvPorCobrar = icvPayments.reduce((sum, p) => sum + p.expectedAmount, 0)
@@ -149,7 +158,6 @@ export function usePeriodMetrics(period: PeriodWithRules | null) {
       // "Pagos pendientes" solo cuenta lo que de verdad necesita acción hoy (Pendiente o No
       // pagado); un mes recién generado que aún no entra a su ventana de cobro (Al día) se
       // cuenta junto a los pagados, porque no hay nada pendiente que hacer con él todavía.
-      const referenceDate = today()
       const paidPaymentsCount = billablePayments.filter((p) => {
         if (p.status === 'pagado') return true
         return getDisplayPaymentStatus(p.status, p.dueDate, referenceDate) === 'al_dia'

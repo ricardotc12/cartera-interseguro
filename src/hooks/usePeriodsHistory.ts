@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { calculateCollectionRatio, calculateVidaEmission, effectiveDueDate, qualifiesForIcv } from '@/domain'
+import { today } from '@/lib/date'
 import type { AffiliateStatus, PaymentStatus } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
 
@@ -50,6 +51,7 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
         return
       }
 
+      const todayDate = today()
       const policies = policiesResult.data ?? []
       const payments = (paymentsResult.data ?? []) as unknown as {
         year_month: string
@@ -89,8 +91,12 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
           // hasta el fin de este período (no solo las que vencen dentro de él) — mismo criterio
           // que usePeriodMetrics, para que el historial muestre la evolución del acumulado real
           // y no una fracción por período que no coincide con el reporte oficial de Interseguro.
+          // Tope adicional "hasta hoy" para el período vigente (cuyo fin todavía no llega):
+          // generateOwedMonths pre-genera cuotas futuras (hasta diciembre del año en curso), que
+          // Interseguro todavía ni cobra — sin este tope se contarían de más.
+          const icvCutoff = period.endDate < todayDate ? period.endDate : todayDate
           const icvPayments = allPaymentsMapped.filter(
-            (p) => p.dueDate <= period.endDate && p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth),
+            (p) => p.dueDate <= icvCutoff && p.policy != null && qualifiesForIcv(p.policy.status, p.policy.start_date, p.yearMonth),
           )
           const icvPercentage = calculateCollectionRatio(icvPayments)
 
