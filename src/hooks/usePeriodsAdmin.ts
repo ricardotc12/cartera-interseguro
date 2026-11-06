@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { createHookContext } from '@/lib/createHookContext'
+import { today } from '@/lib/date'
 import type { CollectionFactorRule, IcvFactorRule, IncentivePeriod, IncentiveRule, PeriodStatus } from '@/types/domain'
 
 export interface PeriodInput {
@@ -162,10 +163,25 @@ function usePeriodsAdminImpl() {
 
     if (fetchError) {
       setError(fetchError.message)
-    } else {
-      setPeriods(((data as unknown as PeriodRow[]) ?? []).map(mapPeriod))
-      setError(null)
+      setLoading(false)
+      return
     }
+
+    const rows = (data as unknown as PeriodRow[]) ?? []
+    // Un período (borrador o activo) cuya Fecha de fin ya pasó se cierra solo — no debe poder
+    // activarse ni quedar "abierto" indefinidamente solo porque nadie entró a cerrarlo a mano.
+    // Antes, un período en borrador nunca activado se quedaba así para siempre aunque el tiempo
+    // ya hubiera pasado (confirmado 2026-11-06).
+    const staleIds = rows.filter((r) => r.status !== 'closed' && r.end_date < today()).map((r) => r.id)
+    if (staleIds.length > 0) {
+      await supabase.from('incentive_periods').update({ status: 'closed', updated_by: user.id }).in('id', staleIds)
+      for (const r of rows) {
+        if (staleIds.includes(r.id)) r.status = 'closed'
+      }
+    }
+
+    setPeriods(rows.map(mapPeriod))
+    setError(null)
     setLoading(false)
   }, [user])
 
