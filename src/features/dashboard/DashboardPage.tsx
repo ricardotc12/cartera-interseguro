@@ -182,15 +182,13 @@ export function DashboardPage() {
             tone="secondary"
           />
         )}
-        {profile?.showIcv && (
-          <IndicatorCard
-            label="ICV"
-            value={metrics.icvPercentage != null ? formatPoints(metrics.icvPercentage) : 'Sin datos'}
-            hint={metrics.icvFactor != null ? `Factor ${metrics.icvFactor.toFixed(2)}` : undefined}
-            icon={Gauge}
-            tone="secondary"
-          />
-        )}
+        <IndicatorCard
+          label="ICV"
+          value={metrics.icvPercentage != null ? formatPoints(metrics.icvPercentage) : 'Sin datos'}
+          hint={metrics.icvFactor != null ? `Factor ${metrics.icvFactor.toFixed(2)}` : undefined}
+          icon={Gauge}
+          tone="secondary"
+        />
         <IndicatorCard label="Pagos realizados" value={String(metrics.paidPaymentsCount)} icon={CheckCircle2} tone="success" />
         <IndicatorCard label="Pagos pendientes" value={String(metrics.pendingPaymentsCount)} icon={Clock} tone="warning" />
       </div>
