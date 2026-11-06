@@ -18,11 +18,15 @@ export function DataProviders({ children }: { children: ReactNode }) {
     <ProfileProvider>
       <PeriodsAdminProvider>
         <IcvRecordsProvider>
-          <AffiliatesProvider>
-            <PaymentsProvider>
+          {/* PaymentsProvider va por encima de AffiliatesProvider a propósito: crear/editar/eliminar
+              un afiliado o póliza también refresca Cobranza (ver useAffiliates.ts), y para eso
+              useAffiliates necesita poder llamar a usePayments() — solo funciona si Payments ya
+              existe como ancestro en el árbol. */}
+          <PaymentsProvider>
+            <AffiliatesProvider>
               <ContactsProvider>{children}</ContactsProvider>
-            </PaymentsProvider>
-          </AffiliatesProvider>
+            </AffiliatesProvider>
+          </PaymentsProvider>
         </IcvRecordsProvider>
       </PeriodsAdminProvider>
     </ProfileProvider>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { createHookContext } from '@/lib/createHookContext'
+import { usePayments } from '@/hooks/usePayments'
 import { calculateCollectionAmount, calculateEmissionAmount } from '@/domain'
 import type { Affiliate, AffiliateStatus, CoverageCode, Modalidad, Policy, PolicyCoverage } from '@/types/domain'
 
@@ -121,6 +122,10 @@ function friendlyError(error: { code?: string; message: string; details?: string
 
 function useAffiliatesImpl() {
   const { user } = useAuth()
+  // Crear/editar/eliminar un afiliado o póliza cambia qué cuotas corresponden en Cobranza
+  // (sección 19: cuotas generadas según pólizas activas) — sin esto, Cobranza seguía mostrando
+  // los datos viejos hasta que la asesora recargaba la página entera.
+  const { refresh: refreshPayments } = usePayments()
   const [affiliates, setAffiliates] = useState<AffiliateWithPolicies[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -211,6 +216,7 @@ function useAffiliatesImpl() {
     }
 
     await refresh()
+    await refreshPayments()
     return { error: null }
   }
 
@@ -240,6 +246,7 @@ function useAffiliatesImpl() {
     const { error: deleteError } = await supabase.from('affiliates').delete().eq('id', id)
     if (deleteError) return { error: friendlyError(deleteError) }
     await refresh()
+    await refreshPayments()
     return { error: null }
   }
 
@@ -269,6 +276,7 @@ function useAffiliatesImpl() {
     }
 
     await refresh()
+    await refreshPayments()
     return { error: null }
   }
 
@@ -313,6 +321,7 @@ function useAffiliatesImpl() {
     }
 
     await refresh()
+    await refreshPayments()
     return { error: null }
   }
 
@@ -320,6 +329,7 @@ function useAffiliatesImpl() {
     const { error: deleteError } = await supabase.from('policies').delete().eq('id', id)
     if (deleteError) return { error: friendlyError(deleteError) }
     await refresh()
+    await refreshPayments()
     return { error: null }
   }
 
