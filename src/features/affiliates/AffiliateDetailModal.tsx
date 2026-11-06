@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { today } from '@/lib/date'
 import { calculateDaysActive, calculatePeriodForDate, calculateVidaEmission, COVERAGES } from '@/domain'
 import type { IncentivePeriod, Policy } from '@/types/domain'
 import type { AffiliateWithPolicies, PolicyInput } from '@/hooks/useAffiliates'
@@ -129,7 +130,8 @@ export function AffiliateDetailModal({
                       {policy.status === 'cancelado' && policy.cancellationDate && (
                         <p className="mt-1 text-xs font-medium text-red-600">
                           Anulada el {formatDate(policy.cancellationDate)} — estuvo vigente{' '}
-                          {calculateDaysActive(policy.startDate, policy.cancellationDate)} días
+                          {calculateDaysActive(policy.startDate, policy.cancellationDate)} días, anulada hace{' '}
+                          {calculateDaysActive(policy.cancellationDate, today())} días
                         </p>
                       )}
                     </div>

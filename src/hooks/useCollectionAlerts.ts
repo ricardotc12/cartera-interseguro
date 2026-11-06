@@ -18,7 +18,11 @@ function daysUntilDue(dueDate: string, referenceDate: string): number {
 export function useCollectionAlerts() {
   const { payments, loading } = usePayments()
 
+  // Las cuotas de pólizas anuladas son "fantasma" (solo existen para el cálculo de ICV, ver
+  // usePayments.ts) — no son cobranza real pendiente de gestionar, así que no deben generar
+  // alertas ni sumar a la campana (mismo criterio que ya usa CollectionPage para su lista).
   const unpaid: CollectionAlert[] = payments
+    .filter((p) => p.policy.status !== 'cancelado')
     .filter((p) => p.status === 'no_pagado' || p.status === 'pendiente_confirmar')
     .map((p) => ({ payment: p, dueDate: effectiveDueDate(p.yearMonth, p.dueDate) }))
 
