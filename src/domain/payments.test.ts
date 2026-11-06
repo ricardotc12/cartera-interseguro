@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   generateOwedMonths,
   effectiveFirstOwedMonth,
+  hasManualFirstPayment,
   calculateDaysOverdue,
   defaultDueDateForMonth,
   effectiveDueDate,
@@ -90,6 +91,17 @@ describe('effectiveFirstOwedMonth (corte de débito automático)', () => {
 
   it('emisión el día 1 de diciembre no cruza de año (01/12 -> corte 20/12)', () => {
     expect(effectiveFirstOwedMonth('2026-12-01')).toBe('2026-12-01')
+  })
+})
+
+describe('hasManualFirstPayment (cuota que la asesora cobra ella misma al afiliar)', () => {
+  it('emisión el día 1: el débito automático ya cobra ese mismo mes, no hace falta cuota manual aparte', () => {
+    expect(hasManualFirstPayment('2026-09-01')).toBe(false)
+  })
+
+  it('emisión del día 2 en adelante: sí hay una cuota manual adicional en el mes de emisión', () => {
+    expect(hasManualFirstPayment('2026-10-02')).toBe(true)
+    expect(hasManualFirstPayment('2026-09-30')).toBe(true)
   })
 })
 

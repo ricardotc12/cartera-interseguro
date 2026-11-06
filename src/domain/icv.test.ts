@@ -40,4 +40,16 @@ describe('qualifiesForIcv', () => {
   it('una póliza anulada deja de contar pasado el año desde su emisión', () => {
     expect(qualifiesForIcv('cancelado', '2026-01-15', '2027-02-01')).toBe(false)
   })
+
+  it('no cuenta la cuota manual del mes de emisión cuando la afiliación fue del día 2 en adelante', () => {
+    expect(qualifiesForIcv('activo', '2026-07-02', '2026-07-01')).toBe(false)
+  })
+
+  it('sí cuenta la cuota del mes de emisión cuando la afiliación fue el día 1 (la cobra el débito automático)', () => {
+    expect(qualifiesForIcv('activo', '2026-07-01', '2026-07-01')).toBe(true)
+  })
+
+  it('cuenta normal las cuotas de meses posteriores al de emisión', () => {
+    expect(qualifiesForIcv('activo', '2026-07-02', '2026-08-01')).toBe(true)
+  })
 })

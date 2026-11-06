@@ -2,7 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { createHookContext } from '@/lib/createHookContext'
-import { generateOwedMonths, defaultDueDateForMonth, effectiveFirstOwedMonth, modalidadStepMonths, calculateTenureMonths } from '@/domain'
+import {
+  generateOwedMonths,
+  defaultDueDateForMonth,
+  effectiveFirstOwedMonth,
+  hasManualFirstPayment,
+  modalidadStepMonths,
+  calculateTenureMonths,
+} from '@/domain'
 import { today } from '@/lib/date'
 import type { Affiliate, AffiliateStatus, CoverageCode, Modalidad, Payment, PaymentStatus, Policy, PolicyCoverage } from '@/types/domain'
 
@@ -167,7 +174,7 @@ function usePaymentsImpl() {
       const months = generateOwedMonths(effectiveFirstOwedMonth(policy.start_date), referenceDate, modalidadStepMonths(policy.modalidad))
       const eligibleMonths =
         policy.status === 'cancelado' ? months.filter((m) => calculateTenureMonths(policy.start_date, m) < 12) : months
-      return eligibleMonths.map((yearMonth) => ({
+      const rows = eligibleMonths.map((yearMonth) => ({
         policy_id: policy.id,
         year_month: yearMonth,
         expected_amount: policy.collection_amount,
@@ -176,6 +183,23 @@ function usePaymentsImpl() {
         due_date: defaultDueDateForMonth(yearMonth),
         created_by: user.id,
       }))
+      // Cuota adicional del propio mes de emisión cuando la afiliación fue del día 2 en
+      // adelante: la asesora la cobra ella misma al afiliar, fuera del ciclo de débito
+      // automático (que recién arranca en effectiveFirstOwedMonth) — confirmado que esto
+      // explicaba el desfase del ICV contra el reporte oficial de Interseguro. Esta cuota
+      // SÍ cuenta para Cobranza/reportes normales; solo el ICV la excluye (ver domain/icv.ts).
+      if (hasManualFirstPayment(policy.start_date)) {
+        rows.push({
+          policy_id: policy.id,
+          year_month: `${policy.start_date.slice(0, 7)}-01`,
+          expected_amount: policy.collection_amount,
+          status: 'no_pagado' as PaymentStatus,
+          is_rescheduled: false,
+          due_date: policy.start_date,
+          created_by: user.id,
+        })
+      }
+      return rows
     })
 
     if (rowsToEnsure.length > 0) {

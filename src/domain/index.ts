@@ -7,6 +7,7 @@ export { calculatePeriodForDate, calculateDaysUntil, getCalendarMonthRange, MES_
 export {
   generateOwedMonths,
   effectiveFirstOwedMonth,
+  hasManualFirstPayment,
   calculateDaysOverdue,
   defaultDueDateForMonth,
   effectiveDueDate,

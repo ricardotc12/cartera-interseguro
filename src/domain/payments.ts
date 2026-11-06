@@ -58,6 +58,19 @@ export function effectiveFirstOwedMonth(startDate: string): string {
 }
 
 /**
+ * true si, además del ciclo de débito automático (que arranca en
+ * `effectiveFirstOwedMonth`), la póliza tiene una cuota adicional "manual" en
+ * su propio mes de emisión — la que la asesora cobra ella misma al afiliar al
+ * cliente (confirmado: lo hace siempre, sin importar el día). Solo aplica si
+ * la afiliación fue del día 2 en adelante: si fue el día 1, el débito
+ * automático ya alcanza a cobrar ese mismo mes (ver `effectiveFirstOwedMonth`)
+ * y no hace falta una cuota manual aparte — serían el mismo mes.
+ */
+export function hasManualFirstPayment(startDate: string): boolean {
+  return Number(startDate.slice(8, 10)) >= 2
+}
+
+/**
  * Días de atraso de un pago pendiente respecto a su fecha de vencimiento.
  * Solo tiene sentido si se registró una fecha de vencimiento (sección 20,
  * "preparar para fecha de vencimiento") — no se inventa un vencimiento por
