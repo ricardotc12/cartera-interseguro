@@ -292,8 +292,22 @@ function useAffiliatesImpl() {
   async function updatePolicy(id: string, patch: Partial<PolicyInput>) {
     if (!user) return { error: 'Debes iniciar sesión.' }
 
-    const emissionAmount = patch.coverages !== undefined ? calculateEmissionAmount(patch.coverages) : undefined
-    const collectionAmount = patch.coverages !== undefined ? calculateCollectionAmount(patch.coverages) : undefined
+    const currentPolicy = affiliates.flatMap((a) => a.policies).find((p) => p.id === id)
+    // Una póliza antigua (de antes de que existiera el desglose de coberturas) no tiene filas
+    // en policy_coverages — su formulario de edición arranca con el checklist vacío. Si la
+    // asesora edita otro campo (ej. la Fecha de Emisión) sin volver a marcar coberturas, el
+    // desglose llega vacío y, antes de este resguardo, el monto se recalculaba en S/0.00,
+    // borrando el monto real que ya tenía. No se sobreescribe a 0 un monto que ya era mayor a
+    // 0 salvo que el desglose realmente traiga coberturas marcadas (confirmado 2026-11-23,
+    // caso real: póliza de Fressia Ramirez Trelles quedó en S/0.00 al editar solo la fecha).
+    const clearingRealAmount =
+      patch.coverages !== undefined &&
+      patch.coverages.length === 0 &&
+      currentPolicy != null &&
+      (currentPolicy.emissionAmount > 0 || currentPolicy.collectionAmount > 0)
+
+    const emissionAmount = patch.coverages !== undefined && !clearingRealAmount ? calculateEmissionAmount(patch.coverages) : undefined
+    const collectionAmount = patch.coverages !== undefined && !clearingRealAmount ? calculateCollectionAmount(patch.coverages) : undefined
 
     const { error: updateError } = await supabase
       .from('policies')
@@ -311,7 +325,7 @@ function useAffiliatesImpl() {
 
     if (updateError) return { error: friendlyError(updateError) }
 
-    if (patch.coverages !== undefined) {
+    if (patch.coverages !== undefined && !clearingRealAmount) {
       // Reemplaza el set de coberturas (más simple y transparente que un diff fila por fila;
       // el historial de auditoría igual queda registrado como delete + insert).
       await supabase.from('policy_coverages').delete().eq('policy_id', id)
