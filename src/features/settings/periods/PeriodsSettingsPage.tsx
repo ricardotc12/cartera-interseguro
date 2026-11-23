@@ -140,15 +140,13 @@ export function PeriodsSettingsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        {period.status !== 'closed' && (
-                          <button
-                            onClick={() => setView({ kind: 'edit', period })}
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                            title="Editar" aria-label="Editar"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => setView({ kind: 'edit', period })}
+                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          title="Editar" aria-label="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => setView({ kind: 'create', source: period })}
                           className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"

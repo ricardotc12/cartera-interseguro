@@ -275,20 +275,27 @@ function usePeriodsAdminImpl() {
     if (!user) return { error: 'Debes iniciar sesión.' }
 
     const current = periods.find((p) => p.id === id)
-    if (current?.status === 'closed') {
-      return { error: 'Este período está cerrado; sus reglas no se pueden modificar (inmutabilidad histórica).' }
-    }
+    const isClosed = current?.status === 'closed'
 
+    // Un período cerrado sigue permitiendo corregir nombre/fechas/notas (ej. el cierre real
+    // cayó un día después porque el día 15 fue domingo) — lo que cuenta para ese período
+    // (afiliados, cobranza) depende solo de sus fechas guardadas, no de su estado. Pero sus
+    // reglas de cálculo ya aplicadas (meta, multiplicador, tramos) quedan protegidas: no se
+    // tocan, para no mover el historial de incentivos ya calculado (confirmado 2026-11-23).
     const { error: updateError } = await supabase
       .from('incentive_periods')
       .update({
         name: period.name,
         start_date: period.startDate,
         end_date: period.endDate,
-        vida_emission_goal: period.vidaEmissionGoal,
-        vida_emission_multiplier: period.vidaEmissionMultiplier,
-        icv_goal: period.icvGoal,
-        collection_goal: period.collectionGoal,
+        ...(isClosed
+          ? {}
+          : {
+              vida_emission_goal: period.vidaEmissionGoal,
+              vida_emission_multiplier: period.vidaEmissionMultiplier,
+              icv_goal: period.icvGoal,
+              collection_goal: period.collectionGoal,
+            }),
         notes: period.notes,
         updated_by: user.id,
       })
@@ -296,14 +303,16 @@ function usePeriodsAdminImpl() {
 
     if (updateError) return { error: friendlyError(updateError) }
 
-    // Reemplaza el conjunto de reglas (más simple y transparente que un diff fila por fila;
-    // el historial de auditoría igual queda registrado como delete + insert).
-    await supabase.from('incentive_rules').delete().eq('period_id', id)
-    await supabase.from('collection_factor_rules').delete().eq('period_id', id)
-    await supabase.from('icv_factor_rules').delete().eq('period_id', id)
+    if (!isClosed) {
+      // Reemplaza el conjunto de reglas (más simple y transparente que un diff fila por fila;
+      // el historial de auditoría igual queda registrado como delete + insert).
+      await supabase.from('incentive_rules').delete().eq('period_id', id)
+      await supabase.from('collection_factor_rules').delete().eq('period_id', id)
+      await supabase.from('icv_factor_rules').delete().eq('period_id', id)
 
-    const rulesResult = await insertRules(id, rules)
-    if (rulesResult.error) return { error: rulesResult.error }
+      const rulesResult = await insertRules(id, rules)
+      if (rulesResult.error) return { error: rulesResult.error }
+    }
 
     await refresh()
     return { error: null }

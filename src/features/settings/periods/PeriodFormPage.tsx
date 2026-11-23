@@ -75,7 +75,11 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
   const [submitting, setSubmitting] = useState(false)
 
   const readOnly = mode === 'view'
-  const rulesReadOnly = readOnly || (mode === 'create' && ruleSource === 'keep')
+  // Un período cerrado se puede seguir editando para corregir nombre/fechas/notas (ej. el
+  // cierre real cayó un día después por caer domingo) — pero sus reglas de cálculo ya
+  // aplicadas (meta, multiplicador, tramos) quedan protegidas, igual que ya hace el hook.
+  const locked = mode === 'edit' && editingPeriod?.status === 'closed'
+  const rulesReadOnly = readOnly || locked || (mode === 'create' && ruleSource === 'keep')
 
   function applyRuleSource(next: RuleSource) {
     setRuleSource(next)
@@ -215,7 +219,7 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
                 step="0.01"
                 value={vidaEmissionGoal}
                 onChange={(e) => setVidaEmissionGoal(e.target.value)}
-                disabled={readOnly}
+                disabled={readOnly || locked}
                 className={fieldClass(!!fieldErrors.vidaEmissionGoal)}
               />
             </FormField>
@@ -232,7 +236,7 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
                 step="0.1"
                 value={vidaEmissionMultiplier}
                 onChange={(e) => setVidaEmissionMultiplier(e.target.value)}
-                disabled={readOnly}
+                disabled={readOnly || locked}
                 className={fieldClass(!!fieldErrors.vidaEmissionMultiplier)}
               />
             </FormField>
@@ -244,7 +248,7 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
                 step="0.01"
                 value={icvGoal}
                 onChange={(e) => setIcvGoal(e.target.value)}
-                disabled={readOnly}
+                disabled={readOnly || locked}
                 className={fieldClass()}
               />
             </FormField>
@@ -256,7 +260,7 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
                 step="0.01"
                 value={collectionGoal}
                 onChange={(e) => setCollectionGoal(e.target.value)}
-                disabled={readOnly}
+                disabled={readOnly || locked}
                 className={fieldClass()}
               />
             </FormField>
@@ -273,6 +277,14 @@ export function PeriodFormPage({ mode, sourcePeriod, editingPeriod, onSubmit, on
           </FormField>
         </CardBody>
       </Card>
+
+      {locked && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          Este período está cerrado: puedes corregir el nombre, las fechas y las notas (ej. si el cierre real cayó un
+          día después). La meta, el multiplicador y los tramos quedan protegidos para no mover el historial de
+          incentivos ya calculado.
+        </p>
+      )}
 
       <Card>
         <CardBody className="space-y-6">
