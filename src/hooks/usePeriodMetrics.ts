@@ -10,6 +10,7 @@ import {
   calculateVidaEmission,
   effectiveDueDate,
   getDisplayPaymentStatus,
+  isManualFirstPayment,
   qualifiesForIcv,
 } from '@/domain'
 import { today } from '@/lib/date'
@@ -119,7 +120,12 @@ export function usePeriodMetrics(period: PeriodWithRules | null) {
       // deben contarse aquí, o inflarían "por cobrar" y bajarían el ratio sin que sea cobranza
       // real pendiente de gestionar.
       const billablePayments = paymentsInPeriod.filter((p) => p.policy?.status !== 'cancelado')
-      const collectionRatio = calculateCollectionRatio(billablePayments)
+      // El ratio además excluye la cuota manual del mes de emisión (la cobra la asesora fuera del
+      // sistema de Interseguro): su reporte oficial no la ve (confirmado 2026-11-24: 75.69%).
+      // Los conteos de pagos (abajo) siguen usando billablePayments completo.
+      const collectionRatio = calculateCollectionRatio(
+        billablePayments.filter((p) => !(p.policy != null && isManualFirstPayment(p.policy.start_date, p.yearMonth))),
+      )
       const collectionFactor = collectionRatio != null ? calculateCollectionFactor(collectionRatio, period.collectionFactorRules) : null
 
       // ICV, a diferencia de Ratio Cobranza, NO se limita al período de incentivo vigente —

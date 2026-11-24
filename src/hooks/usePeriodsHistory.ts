@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { calculateCollectionRatio, calculateVidaEmission, effectiveDueDate, qualifiesForIcv } from '@/domain'
+import { calculateCollectionRatio, calculateVidaEmission, effectiveDueDate, isManualFirstPayment, qualifiesForIcv } from '@/domain'
 import { today } from '@/lib/date'
 import type { AffiliateStatus, PaymentStatus } from '@/types/domain'
 import type { PeriodWithRules } from './usePeriodsAdmin'
@@ -86,7 +86,13 @@ export function usePeriodsHistory(periods: PeriodWithRules[]) {
           const periodPayments = allPaymentsMapped.filter((p) => p.dueDate >= period.startDate && p.dueDate <= period.endDate)
           // Ratio Cobranza excluye las cuotas "fantasma" que solo existen para ICV en pólizas
           // anuladas (concepto por período, igual que en usePeriodMetrics).
-          const collectionRatio = calculateCollectionRatio(periodPayments.filter((p) => p.policy?.status !== 'cancelado'))
+          // También excluye la cuota manual del mes de emisión: el reporte oficial de Interseguro
+          // (cobranza del período) no la ve (confirmado 2026-11-24 contra reporte real: 75.69%).
+          const collectionRatio = calculateCollectionRatio(
+            periodPayments.filter(
+              (p) => p.policy?.status !== 'cancelado' && !(p.policy != null && isManualFirstPayment(p.policy.start_date, p.yearMonth)),
+            ),
+          )
           // ICV, a diferencia de Ratio Cobranza, es acumulado: todas las cuotas que corresponden
           // hasta el fin de este período (no solo las que vencen dentro de él) — mismo criterio
           // que usePeriodMetrics, para que el historial muestre la evolución del acumulado real

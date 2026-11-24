@@ -10,6 +10,15 @@ export function calculateICVFactor(icvPct: number, rules: IcvFactorRule[]): numb
 }
 
 /**
+ * Cuota "manual" del propio mes de emisión (afiliación del día 2 en adelante):
+ * la cobra la asesora directo al afiliar, fuera del sistema de Interseguro, así
+ * que ni su reporte oficial (ICV ni cobranza del período) la incluye.
+ */
+export function isManualFirstPayment(policyStartDate: string, paymentYearMonth: string): boolean {
+  return paymentYearMonth.slice(0, 7) === policyStartDate.slice(0, 7) && Number(policyStartDate.slice(8, 10)) >= 2
+}
+
+/**
  * ICV = (recaudado / por cobrar) de las cuotas que corresponden: las de pólizas
  * activas/pendientes cuentan siempre; las de pólizas ANULADAS solo cuentan
  * dentro de los primeros 12 meses desde su Fecha de Emisión (confirmado contra
@@ -27,8 +36,7 @@ export function calculateICVFactor(icvPct: number, rules: IcvFactorRule[]): numb
  * esa cuota del mes de emisión SÍ cuenta normalmente.
  */
 export function qualifiesForIcv(policyStatus: AffiliateStatus, policyStartDate: string, paymentYearMonth: string): boolean {
-  const isManualFirstPayment = paymentYearMonth.slice(0, 7) === policyStartDate.slice(0, 7) && Number(policyStartDate.slice(8, 10)) >= 2
-  if (isManualFirstPayment) return false
+  if (isManualFirstPayment(policyStartDate, paymentYearMonth)) return false
   if (policyStatus === 'cancelado') return calculateTenureMonths(policyStartDate, paymentYearMonth) < 12
   return true
 }

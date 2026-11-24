@@ -1,7 +1,7 @@
 export { calculateVidaEmission } from './vidaEmission'
 export { findIncentiveTier, calculateBaseIncentive, calculateFinalIncentive } from './incentive'
 export { calculateCollectionRatio, calculateCollectionFactor, calculateMoraLevel } from './collection'
-export { calculateICVFactor, qualifiesForIcv } from './icv'
+export { calculateICVFactor, isManualFirstPayment, qualifiesForIcv } from './icv'
 export { calculateGoalProgress } from './goals'
 export { calculatePeriodForDate, calculateDaysUntil, getCalendarMonthRange, MES_PONDERADO_GOAL } from './period'
 export {
